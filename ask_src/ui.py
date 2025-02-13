@@ -22,10 +22,14 @@ class EnterTextEdit(QTextEdit):
             super().keyPressEvent(event)
 
 class MainWindow(QMainWindow):
-    def __init__(self, chat, chat_signals):
+    def __init__(self, chat, chat_signals, project_path="."):
         super().__init__()
-        self.setWindowTitle("InsightCoder Codebase Chat")
         self.resize(1200, 800)
+
+        # Dynamically set window title based on project path (default to "InsightCoder" if not specified)
+        project_name = os.path.basename(os.path.abspath(project_path)) if project_path != "." else "InsightCoder"
+        self.setWindowTitle(f"{project_name} Codebase Chat")
+
         self.chat = chat  # chat session instance from chat_utils
         self.chat_history = ""
         self.chat_signals = chat_signals
@@ -64,7 +68,7 @@ class MainWindow(QMainWindow):
         container.setLayout(layout)
         self.setCentralWidget(container)
 
-        self.conversation_dir = "project_info/conversations"  # Directory to save conversations
+        self.conversation_dir = os.path.join(project_path, "project_info", "conversations") # Directory to save conversations
         os.makedirs(self.conversation_dir, exist_ok=True) # Create directory if it doesn't exist
 
         # Set conversation_counter based on existing conversation files.

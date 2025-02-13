@@ -56,6 +56,22 @@ Initially developed as an AI-powered assistant to aid in the development of the 
     export GEMINI_API_KEY="YOUR_API_KEY_HERE"  # Replace with your actual API key
     ```
 
+## Analyzing a Specific Project Directory
+
+To analyze a codebase in a directory other than the current one, use the `--project-path` or `-p` argument when running `ask.py`.
+
+**Example:**
+
+To analyze a project located at `/path/to/your/project`, run:
+
+```bash
+python ask.py --p /path/to/your/project
+```
+
+Replace `/path/to/your/project` with the actual path to the project you want to analyze.
+
+If you omit the `--project-path` argument, InsightCoder will analyze the codebase in the current directory where you run the `ask.py` script.
+
 ## Quick Start Guide
 
 1.  **Open your Terminal and Navigate to the InsightCoder directory:**

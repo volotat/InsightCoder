@@ -12,8 +12,8 @@ def configure_api():
     client = genai.Client(api_key=api_key)
     return client
 
-def get_codebase(input_dir):
-    print("Collecting codebase content...")
+def get_codebase(input_dir): # Accept input_dir as argument
+    print(f"Collecting codebase content from: {input_dir}...") # Informative message
     text_extensions = {
         '.py', '.js', '.java', '.c', '.cpp', '.h', '.hpp',
         '.html', '.css', '.scss', '.less', '.yaml', '.yml',
@@ -29,7 +29,7 @@ def get_codebase(input_dir):
         try:
             result = subprocess.run(
                 ['git', 'check-ignore', '--quiet', rel_path],
-                cwd=input_dir,
+                cwd=input_dir, # Use input_dir here
                 stdout=subprocess.DEVNULL,
                 stderr=subprocess.DEVNULL
             )
@@ -39,7 +39,7 @@ def get_codebase(input_dir):
             return False
 
     files = []
-    for root, dirs, filenames in os.walk(input_dir):
+    for root, dirs, filenames in os.walk(input_dir): # Use input_dir here
         dirs[:] = [d for d in dirs if not d.startswith('.')]
         for filename in filenames:
             filename_lower = filename.lower()
@@ -48,7 +48,7 @@ def get_codebase(input_dir):
             ext = os.path.splitext(filename)[1].lower()
             if ext in text_extensions:
                 full_path = os.path.join(root, filename)
-                rel_path = os.path.relpath(full_path, input_dir)
+                rel_path = os.path.relpath(full_path, input_dir) # Use input_dir here
                 if rel_path in excluded_files:
                     continue
                 if not is_ignored(rel_path):
@@ -66,17 +66,17 @@ def get_codebase(input_dir):
             print(f"Error processing {rel_path}: {str(e)}")
     return "\n".join(combined_content)
 
-def get_git_diff(input_dir):
+def get_git_diff(input_dir): # Accept input_dir as argument
     try:
         staged = subprocess.run(
             ['git', 'diff', '--staged'],
-            cwd=input_dir,
+            cwd=input_dir, # Use input_dir here
             capture_output=True,
             text=True
         )
         unstaged = subprocess.run(
             ['git', 'diff'],
-            cwd=input_dir,
+            cwd=input_dir, # Use input_dir here
             capture_output=True,
             text=True
         )
@@ -90,10 +90,10 @@ def get_git_diff(input_dir):
         print(f"Error getting Git diff: {str(e)}")
         return "Unable to retrieve Git diff information."
 
-def create_system_prompt():
-    input_dir = os.path.abspath(".")
-    codebase = get_codebase(input_dir)
-    git_diff = get_git_diff(input_dir)
+def create_system_prompt(project_path): # Accept project_path as argument
+    input_dir = os.path.abspath(project_path) # Use project_path here
+    codebase = get_codebase(input_dir) # Use input_dir here
+    git_diff = get_git_diff(input_dir) # Use input_dir here
     full_code = f"""CODEBASE CONTEXT (whole codebase of the project):
 {codebase}
 
@@ -102,22 +102,22 @@ GIT DIFF CONTEXT (current uncommitted changes):
 {git_diff}
 ```"""
 
-    
     system_prompt = f"""
-You are "InsightCoder" project.
+You are an AI assistant designed to analyze and answer questions about a given codebase.
 All the info about you as a project will be presented in a form of a current codebase.
-Answer to each question as if you are talking about yourself.
 
 If you need to analyze the code, carefully review the provided code files and provide detailed, professional responses.
 Consider best practices, potential issues, and optimization opportunities.
 Format your answers with clear headings and code blocks using Markdown code fences when needed.
 Use specific language syntax highlighting within code fences where applicable (e.g., python\\n...\\n, javascript\\n...\\n).
+Answer user questions based on the provided codebase context.
+
 {full_code}"""
     return system_prompt
 
-def start_chat_session():
+def start_chat_session(project_path): # Accept project_path as argument
     client = configure_api()
-    system_prompt = create_system_prompt()
+    system_prompt = create_system_prompt(project_path) # Pass project_path to create_system_prompt
 
     # Load a saved conversation from a file:
     #history = load_conversation("conversations/conversation_2.md")
@@ -132,7 +132,7 @@ def start_chat_session():
             max_output_tokens=8192 * 2,
             response_mime_type="text/plain"),
         history = [])
-    
+
     return chat
 
 def load_conversation(filepath):
@@ -140,13 +140,13 @@ def load_conversation(filepath):
     Loads a saved conversation from a markdown file.
     Expected format:
     **User:**
-    
+
     user message...
-    
+
     **Model:**
-    
+
     model message...
-    
+
     Returns:
     List of dicts in the form:
     [
