@@ -101,6 +101,10 @@ GIT DIFF CONTEXT (current uncommitted changes):
 ```diff
 {git_diff}
 ```"""
+    
+    # Save the full_code to a file for debugging
+    with open("full_code.txt", "w", encoding="utf-8") as f:
+        f.write(full_code)
 
     system_prompt = f"""
 You are an AI assistant designed to analyze and answer questions about a given codebase.
@@ -124,6 +128,8 @@ def start_chat_session(project_path): # Accept project_path as argument
 
     chat = client.chats.create(
         model="gemini-2.0-flash-thinking-exp-01-21",
+        #model="gemini-2.0-pro-exp-02-05",
+        #model="gemini-2.0-flash-lite-preview-02-05",
         config=types.GenerateContentConfig(
             system_instruction=system_prompt,
             temperature=0.8,
@@ -133,7 +139,7 @@ def start_chat_session(project_path): # Accept project_path as argument
             response_mime_type="text/plain"),
         history = [])
 
-    return chat
+    return client, chat 
 
 def load_conversation(filepath):
     """

@@ -1,11 +1,12 @@
 import os
 import re
-import glob
+import glob, time
 import markdown
-from PyQt5.QtCore import pyqtSignal, pyqtSlot, Qt
-from PyQt5.QtWidgets import QMainWindow, QTextBrowser, QPushButton, QVBoxLayout, QHBoxLayout, QWidget, QTextEdit
+from PyQt5.QtCore import pyqtSignal, pyqtSlot, Qt, QTimer
+from PyQt5.QtWidgets import QMainWindow, QTextBrowser, QPushButton, QVBoxLayout, QHBoxLayout, QWidget, QTextEdit, QLabel
 
 from ask_src.worker import ChatWorker
+from ask_src.token_worker import TokenCountWorker, TokenCountSignals
 
 # Subclass QTextEdit to capture Enter key
 class EnterTextEdit(QTextEdit):
@@ -22,7 +23,7 @@ class EnterTextEdit(QTextEdit):
             super().keyPressEvent(event)
 
 class MainWindow(QMainWindow):
-    def __init__(self, chat, chat_signals, project_path="."):
+    def __init__(self, client, chat, chat_signals, project_path="."):
         super().__init__()
         self.resize(1200, 800)
 
@@ -30,6 +31,8 @@ class MainWindow(QMainWindow):
         project_name = os.path.basename(os.path.abspath(project_path)) if project_path != "." else "InsightCoder"
         self.setWindowTitle(f"{project_name} Codebase Chat")
 
+        self.client = client  # OpenAI API client instance
+        self.token_count_signals = TokenCountSignals() # Create TokenCountSignals instance
         self.chat = chat  # chat session instance from chat_utils
         self.chat_history = ""
         self.chat_signals = chat_signals
@@ -52,9 +55,21 @@ class MainWindow(QMainWindow):
         self.input_edit.setStyleSheet("QTextEdit { font-family: monospace; font-size: 12pt; }")
         self.input_edit.textChanged.connect(self.adjust_input_height)
         self.input_edit.enterPressed.connect(self.send_message)
+        # self.input_edit.textChanged.connect(self.update_token_count_display) # Disconnect direct connection
+
+        self.token_count_timer = QTimer() # Timer for debouncing token count updates
+        self.token_count_timer.setInterval(1000)  # 1000 ms delay
+        self.token_count_timer.setSingleShot(True) # Single shot timer
+        self.token_count_timer.timeout.connect(self.update_token_count_display) # Connect timer to update function
+        self.token_count_signals.token_count_updated.connect(self.set_token_count_label) # Connect signal to label update
+        self.input_edit.textChanged.connect(self.start_token_count_timer) # Connect textChanged to timer start
 
         self.send_button = QPushButton("Send")
         self.send_button.clicked.connect(self.send_message)
+
+        self.token_count_label = QLabel("Tokens: 0") # Label to display token count
+        self.token_count_label.setAlignment(Qt.AlignRight)
+        self.token_count_label.setStyleSheet("QLabel { font-size: 10pt; color: gray; font-family: monospace; }")
 
         input_layout = QHBoxLayout()
         input_layout.addWidget(self.input_edit)
@@ -62,6 +77,7 @@ class MainWindow(QMainWindow):
 
         layout = QVBoxLayout()
         layout.addWidget(self.text_browser)
+        layout.addWidget(self.token_count_label) # Add token count label to layout
         layout.addLayout(input_layout)
 
         container = QWidget()
@@ -85,9 +101,8 @@ class MainWindow(QMainWindow):
     @pyqtSlot(str, bool, str)
     def update_chat_display(self, html_text, final, final_md):
         self.text_browser.setHtml(html_text)
-        self.text_browser.verticalScrollBar().setValue(
-            self.text_browser.verticalScrollBar().maximum()
-        )
+        self.text_browser.verticalScrollBar().setValue(self.text_browser.verticalScrollBar().maximum())
+
         if final:
             self.chat_history = final_md
             # self.save_conversation_html() # This is for debug only
@@ -117,6 +132,25 @@ class MainWindow(QMainWindow):
             print(f"Markdown conversation saved to: {filepath}")
         except Exception as e:
             print(f"Error saving markdown conversation: {e}")
+
+    @pyqtSlot()
+    def start_token_count_timer(self):
+        """Starts the token count timer, debouncing the update."""
+        self.token_count_timer.start()
+
+    @pyqtSlot()
+    def update_token_count_display(self): # Renamed and modified
+        """Starts TokenCountWorker to update token count in background."""
+        text = self.input_edit.toPlainText()
+        
+        worker = TokenCountWorker(self.client, self.chat, text, self.token_count_signals) # Create worker
+        worker.start() # Start the worker thread
+        self.token_count_label.setText("Tokens: Counting...") # Optionally indicate counting is in progress
+
+    @pyqtSlot(int)
+    def set_token_count_label(self, token_count):
+        """Updates the token count label in UI thread (signal handler)."""
+        self.token_count_label.setText(f"Tokens: {token_count}")
 
     def adjust_input_height(self):
         doc_height = self.input_edit.document().size().height()

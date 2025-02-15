@@ -8,12 +8,39 @@ Initially developed as an AI-powered assistant to aid in the development of the 
 
 ## Core Features
 
-*   **Deep Codebase Analysis via AI:**  Employs cutting-edge LLMs to go beyond superficial keyword searches, offering a true understanding of your code's logic and structure.
+*   **Deep Codebase Analysis via AI:**  InsightCoder utilizes the power of Large Language Models (LLMs) to provide a profound understanding of your codebase, far beyond simple keyword searches. It analyzes code logic and structure to answer your queries contextually.
+*   **Large Context Window:** To effectively analyze entire codebases, InsightCoder leverages the `gemini-2.0-flash-thinking-exp-01-21` model. This model is currently chosen for its **extensive 1 million token context window**. This large context is crucial for processing potentially large project codebases in their entirety, ensuring the AI has a holistic understanding of the project.
 *   **Intuitive Natural Language Queries:**  Pose questions about your project in plain English and receive detailed, insightful responses.
 *   **Holistic Project Context:** InsightCoder analyzes your entire project, including Git diff information for the most up-to-date and relevant answers regarding recent changes.
 *   **Clean Markdown Output with Syntax Highlighting:**  AI responses are presented in well-formatted Markdown, featuring syntax-highlighted code blocks for optimal readability and developer experience.
 *   **Enhance Developer Workflow & Understanding:** Accelerate onboarding to new projects, quickly grasp complex logic, and streamline your development process with AI-powered assistance.
 *   **Local Execution with Privacy in Mind:** Runs directly from your command line, ensuring your codebase data remains local and secure, only interacting with the LLM API during active query processing.
+*   **Conversation History (Project Memory):** InsightCoder saves each conversation to a Markdown file within the `project_info/conversations` directory.
+*   **Persistent Context:**  This conversation history serves as a form of "memory" for the project. By maintaining a history of interactions, InsightCoder can understand the ongoing context of your queries and provide more coherent and relevant responses in subsequent turns of the conversation.
+*   **Large Context Window Necessity:** Saving conversation history is another reason why a large context window is essential.  As conversations progress, the accumulated history needs to be within the model's context to maintain continuity and understanding.
+
+## InsightCoder vs. GitHub Copilot: Key Differentiators
+
+It's important to understand that **InsightCoder is not intended to replace tools like GitHub Copilot but rather to complement them.** They serve different primary purposes and excel in different areas. Here's a comparison:
+
+| Feature             | InsightCoder                                  | GitHub Copilot                                  |
+|----------------------|-----------------------------------------------|-------------------------------------------------|
+| **Primary Purpose** | Codebase Understanding & Insights              | Code Completion & Generation                     |
+| **Context Scope**   | **Entire Project Codebase** (2M token window) | Primarily Current File & Immediate Context      |
+| **Analysis Focus**  | Project Architecture, Logic, Patterns          | Line-by-line Code, Snippets                     |
+| **Query Type**      | Natural Language Questions about Codebase      | Code Context for Suggestions                    |
+| **Conversation**    | Persistent Conversation History               | Contextual within Current Editing Session        |
+| **Project Scope**   | **Any Git Repository** (Code, Docs, Books)    | Primarily Programming Code                      |
+| **Tool Category**   | AI-Powered Codebase Analysis Tool             | AI Pair Programmer / Code Assistant             |
+
+**InsightCoder excels at providing a holistic understanding of your project**, enabling you to ask broad questions and receive context-aware answers based on the entire codebase.  It's designed for scenarios where you need to grasp the overall architecture, understand complex logic spanning multiple files, or onboard to a new project quickly.
+
+**GitHub Copilot, on the other hand, shines in real-time code completion and suggestion within your editor.** It's incredibly efficient for speeding up code writing and generating repetitive code blocks.
+
+**Think of them as complementary tools:**
+
+*   **Use GitHub Copilot** for accelerating your daily coding tasks, writing code more efficiently line-by-line.
+*   **Use InsightCoder** when you need to step back and understand the project as a whole, ask high-level questions, or explore unfamiliar codebases.
 
 ## Getting Started
 
@@ -27,7 +54,7 @@ Initially developed as an AI-powered assistant to aid in the development of the 
 1.  **Clone the InsightCoder GitHub Repository:**
 
     ```bash
-    git clone https://github.com/volotat/InsightCoder # Replace with the actual repository URL
+    git clone https://github.com/volotat/InsightCoder 
     cd InsightCoder
     ```
 
@@ -105,3 +132,22 @@ The vision for InsightCoder extends beyond a simple question-answering tool. Fut
 *   **Evolving into an AI Code Agent:** Investigating the potential to transform InsightCoder into a more proactive AI agent capable of assisting in code development, suggesting improvements, and even generating code snippets with minimal oversight.
 *   **Expanding LLM Support:**  Adding support for other popular Large Language Models beyond Google Gemini, offering users greater flexibility and choice.
 *   **Enhanced Code Modification Capabilities:**  Potentially integrating features to allow InsightCoder to suggest and even automatically apply code refactoring or improvements based on its analysis.
+
+## Beyond Code: Analyzing Any Git Repository
+
+While named "InsightCoder," this tool is not limited to just programming code. **InsightCoder can effectively analyze any project that is managed within a Git repository.** This includes:
+
+*   **Documentation Projects:** Understand the structure and content of large documentation sets.
+*   **Book Manuscripts:** Analyze chapters, characters, or plotlines within a book project.
+*   **Blog Content:** Get insights into the themes, topics, or organization of a blog repository.
+*   **Configuration Repositories:** Analyze complex configuration setups.
+
+**As long as your project is in Git, InsightCoder can provide AI-powered insights by analyzing its content and structure.** Simply point InsightCoder to the root directory of your Git repository using the `--project-path` argument, and start asking questions!
+
+## Contributing
+
+Bug reports and questions are welcome! If you encounter any issues, questions or have suggestions for improvements, please [open a new issue](https://github.com/volotat/InsightCoder/issues) on GitHub.
+ 
+
+## License
+InsightCoder is released under the [MIT License](LICENSE).
