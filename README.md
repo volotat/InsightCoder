@@ -14,7 +14,6 @@ Initially developed as an AI-powered assistant to aid in the development of the 
 *   **Holistic Project Context:** InsightCoder analyzes your entire project, including Git diff information for the most up-to-date and relevant answers regarding recent changes.
 *   **Clean Markdown Output with Syntax Highlighting:**  AI responses are presented in well-formatted Markdown, featuring syntax-highlighted code blocks for optimal readability and developer experience.
 *   **Enhance Developer Workflow & Understanding:** Accelerate onboarding to new projects, quickly grasp complex logic, and streamline your development process with AI-powered assistance.
-*   **Local Execution with Privacy in Mind:** Runs directly from your command line, ensuring your codebase data remains local and secure, only interacting with the LLM API during active query processing.
 *   **Conversation History (Project Memory):** InsightCoder saves each conversation to a Markdown file within the `project_info/conversations` directory.
 *   **Persistent Context:** This conversation history acts as a "memory," allowing InsightCoder to understand the ongoing context and provide more relevant responses in subsequent turns.
 *   **Large Context Window Necessity:** Saving conversation history is another reason why a large context window is essential.  As conversations progress, the accumulated history needs to be within the model's context to maintain continuity and understanding.
