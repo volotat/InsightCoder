@@ -23,7 +23,7 @@ class EnterTextEdit(QTextEdit):
             super().keyPressEvent(event)
 
 class MainWindow(QMainWindow):
-    def __init__(self, client, chat, chat_signals, project_path="."):
+    def __init__(self, client, chat, chat_signals, project_path, conversation_path):
         super().__init__()
         self.resize(1200, 800)
 
@@ -36,6 +36,7 @@ class MainWindow(QMainWindow):
         self.chat = chat  # chat session instance from chat_utils
         self.chat_history = ""
         self.chat_signals = chat_signals
+        self.project_path = project_path
 
         self.chat_signals.update_text.connect(self.update_chat_display)
         self.text_browser = QTextBrowser()
@@ -84,9 +85,8 @@ class MainWindow(QMainWindow):
         container.setLayout(layout)
         self.setCentralWidget(container)
 
-        self.conversation_dir = os.path.join(project_path, "project_info", "conversations") # Directory to save conversations
-        os.makedirs(self.conversation_dir, exist_ok=True) # Create directory if it doesn't exist
-
+        self.conversation_dir = conversation_path
+    
         # Set conversation_counter based on existing conversation files.
         pattern = os.path.join(self.conversation_dir, "conversation_*.md")
         existing = glob.glob(pattern)
@@ -167,5 +167,5 @@ class MainWindow(QMainWindow):
         self.text_browser.verticalScrollBar().setValue(self.text_browser.verticalScrollBar().maximum())
         # Spawn ChatWorker later in main.py where worker.py is imported.
         
-        worker = ChatWorker(user_msg, self.chat_history, self.chat_signals.update_text, self.chat)
+        worker = ChatWorker(user_msg, self.chat_history, self.chat_signals.update_text, self.chat, self.project_path)
         worker.start()

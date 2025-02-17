@@ -6,7 +6,24 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
-# [v0.1.2] - 2025-02-14
+## [v0.1.3] - 2025-02-18
+
+### Added
+- **Command-line option `--conversation-path` (or `-c`)** to `ask.py` for specifying a custom directory for conversation history, providing users with control over conversation storage location.
+- **`.gitignore` handling for conversation folder:** Implemented logic to ensure conversation loading works correctly even when the conversation folder (default or custom) is ignored by Git, preserving conversation history while respecting `.gitignore` for codebase analysis.
+- **Diff Detection in AI Responses:** Implemented logic in `diff_detector.py` to automatically detect code diff blocks within the AI's responses, identifying potential code modifications suggested by the AI.
+- **File Path Extraction from Diff Blocks:** Enhanced diff detection to extract file paths from the headers of detected diff blocks, enabling identification of target files for code changes.
+- **File Path Validation:** Implemented validation logic to check if extracted file paths from diff blocks correspond to existing files within the analyzed project, preventing application of diffs to invalid or non-existent files.
+- **Unit Tests for Diff Detection:** Added comprehensive unit tests in `tests/test_diff_detector.py` for the `detect_diff_blocks` function, ensuring the robustness and correctness of diff detection and file path extraction logic.
+- **Test for Conversation Folder Handling:** Added integration tests in `tests/test_conversation_folder.py` to verify correct conversation folder handling, including `.gitignore` scenarios and custom conversation paths.
+
+### Changed
+- Refactored `detect_diff_blocks` function in `diff_detector.py` to return a list of dictionaries, each containing diff block content and extracted file path, improving the structure of diff block information.
+- Updated `ChatWorker` in `worker.py` to utilize the new `detect_diff_blocks` function for processing AI responses and logging detected diff blocks with file path information to the console.
+- Modified `ask.py` and `ui.py` to accept and pass the `conversation_path` command-line argument, enabling users to specify custom conversation folders.
+- Updated `ROADMAP.md` to reflect the implemented features and highlight next priorities, providing an up-to-date project development plan.
+
+## [v0.1.2] - 2025-02-15
 
 ### Added
 - Implemented background token counting using `TokenCountWorker` to prevent UI freezes during text input, ensuring a smoother user experience.

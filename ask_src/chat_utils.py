@@ -1,5 +1,6 @@
 import os
 import sys
+import glob
 import subprocess
 from google import genai
 from google.genai import types
@@ -12,7 +13,7 @@ def configure_api():
     client = genai.Client(api_key=api_key)
     return client
 
-def get_codebase(input_dir): # Accept input_dir as argument
+def get_codebase(input_dir, conversation_dir): # Accept input_dir as argument
     print(f"Collecting codebase content from: {input_dir}...") # Informative message
     text_extensions = {
         '.py', '.js', '.java', '.c', '.cpp', '.h', '.hpp',
@@ -24,6 +25,9 @@ def get_codebase(input_dir): # Accept input_dir as argument
     excluded_extensions = {'.min.js', '.min.css', '.map', '.csv',
                              '.io.js', '.io.css', '.esm.js', '.esm.css', '.cjs.js', '.cjs.css'}
     excluded_files = {'static/js/chart.js', 'static/photoswipe/photoswipe.css'}
+    excluded_dirs = {conversation_dir} # Exclude conversation directory
+
+    project_name = os.path.basename(input_dir) # Get project name
 
     def is_ignored(rel_path):
         try:
@@ -40,7 +44,12 @@ def get_codebase(input_dir): # Accept input_dir as argument
 
     files = []
     for root, dirs, filenames in os.walk(input_dir): # Use input_dir here
+        print(f"Processing directory: {dirs}")
         dirs[:] = [d for d in dirs if not d.startswith('.')]
+
+        # Exclude directories
+        dirs[:] = [d for d in dirs if os.path.join(root, d) not in excluded_dirs]
+
         for filename in filenames:
             filename_lower = filename.lower()
             if any(filename_lower.endswith(ext) for ext in excluded_extensions):
@@ -53,12 +62,13 @@ def get_codebase(input_dir): # Accept input_dir as argument
                     continue
                 if not is_ignored(rel_path):
                     files.append((rel_path, full_path))
+
     combined_content = []
     for rel_path, full_path in files:
         try:
             with open(full_path, 'r', encoding='utf-8', errors='replace') as infile:
                 content = infile.read()
-            combined_content.append(f"file: InsightCoder/{rel_path}")
+            combined_content.append(f"file: {os.path.join(project_name,rel_path)}")
             combined_content.append("---- file start ----")
             combined_content.append(content)
             combined_content.append("---- file end ----\n")
@@ -90,21 +100,30 @@ def get_git_diff(input_dir): # Accept input_dir as argument
         print(f"Error getting Git diff: {str(e)}")
         return "Unable to retrieve Git diff information."
 
-def create_system_prompt(project_path): # Accept project_path as argument
-    input_dir = os.path.abspath(project_path) # Use project_path here
-    codebase = get_codebase(input_dir) # Use input_dir here
-    git_diff = get_git_diff(input_dir) # Use input_dir here
-    full_code = f"""CODEBASE CONTEXT (whole codebase of the project):
+def create_system_prompt(project_path, conversation_path): 
+    input_dir = os.path.abspath(project_path) 
+    conversation_dir = os.path.abspath(conversation_path) 
+    codebase = get_codebase(input_dir, conversation_dir) 
+    git_diff = get_git_diff(input_dir) 
+    conversation_history_context = get_conversation_history_context(conversation_dir)
+    
+    full_context = f"""CODEBASE CONTEXT (whole codebase of the project):
 {codebase}
 
 GIT DIFF CONTEXT (current uncommitted changes):
 ```diff
 {git_diff}
-```"""
+```
+
+CONVERSATION HISTORY CONTEXT (summaries of past conversations):
+{conversation_history_context}
+"""
     
-    # Save the full_code to a file for debugging
-    with open("full_code.txt", "w", encoding="utf-8") as f:
-        f.write(full_code)
+    
+    
+    # Save the full_context to a file for debugging
+    with open("full_context.txt", "w", encoding="utf-8") as f:
+        f.write(full_context)
 
     system_prompt = f"""
 You are an AI assistant designed to analyze and answer questions about a given codebase.
@@ -114,17 +133,40 @@ If you need to analyze the code, carefully review the provided code files and pr
 Consider best practices, potential issues, and optimization opportunities.
 Format your answers with clear headings and code blocks using Markdown code fences when needed.
 Use specific language syntax highlighting within code fences where applicable (e.g., python\\n...\\n, javascript\\n...\\n).
-Answer user questions based on the provided codebase context.
+Answer user questions based on the provided codebase context and conversation history.
+If you have any confusion or need more information, ask the user questions for clarification before presenting the changes.
+If you cannot guarantee a specific behavior that is required by a given task in the code you suggest, make sure to note that in your response.
 
-{full_code}"""
+{full_context}"""
+    
+
     return system_prompt
 
-def start_chat_session(project_path): # Accept project_path as argument
-    client = configure_api()
-    system_prompt = create_system_prompt(project_path) # Pass project_path to create_system_prompt
 
-    # Load a saved conversation from a file:
-    #history = load_conversation("conversations/conversation_2.md")
+def get_conversation_history_context(conversation_path):
+    conversation_files = glob.glob(os.path.join(conversation_path, "conversation_*.md")) # Search for conversation files
+    conversation_content = []
+    for filepath in conversation_files: # Iterate over files
+        try:
+            with open(filepath, 'r', encoding='utf-8') as infile: # Read content
+                content = infile.read()
+
+            rel_path = os.path.relpath(filepath, conversation_path) # Get relative path 
+            conversation_content.append(f"file: {rel_path}")
+            conversation_content.append("---- file start ----")
+            conversation_content.append(content)
+            conversation_content.append("---- file end ----\n")
+        except Exception as e:
+            print(f"Error reading conversation file: {filepath} - {e}") # Handle errors
+    return "\n".join(conversation_content) # Return combined content
+
+def start_chat_session(project_path, conversation_path): # Accept project_path as argument
+    client = configure_api()
+    system_prompt = create_system_prompt(project_path, conversation_path) # Pass project_path to create_system_prompt
+
+    # Load a saved conversation from a file (example - not used in current implementation):
+    # history = load_conversation("conversations/conversation_2.md")
+    # history = load_conversation(os.path.join(project_path, "project_info", "conversations", "conversation_2.md"))
 
     chat = client.chats.create(
         model="gemini-2.0-flash-thinking-exp-01-21",

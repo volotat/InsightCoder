@@ -1,6 +1,6 @@
 # InsightCoder
 
-**InsightCoder** is a tool engineered to provide AI-powered insights directly into your codebase. Utilizing the power of Large Language Models (LLMs), InsightCoder empowers you to ask natural language questions about your software projects and receive intelligent, context-aware answers directly in your terminal.
+**InsightCoder** is a tool engineered to provide AI-powered insights directly into your codebase. Utilizing Large Language Models (LLMs), InsightCoder empowers you to ask natural language questions about your software projects and receive intelligent, context-aware answers directly in your terminal.
 
 Initially developed as an AI-powered assistant to aid in the development of the [Anagnorisis project](https://github.com/volotat/Anagnorisis) (a local recommendation system), InsightCoder has grown into a versatile standalone tool for any software development endeavor.
 
@@ -8,7 +8,7 @@ Initially developed as an AI-powered assistant to aid in the development of the 
 
 ## Core Features
 
-*   **Deep Codebase Analysis via AI:**  InsightCoder utilizes the power of Large Language Models (LLMs) to provide a profound understanding of your codebase, far beyond simple keyword searches. It analyzes code logic and structure to answer your queries contextually.
+*   **Deep Codebase Analysis via AI:**  Utilizing Large Language Models (LLMs), InsightCoder provides a profound understanding of your codebase, going beyond keyword searches to analyze code logic and structure contextually.
 *   **Large Context Window:** To effectively analyze entire codebases, InsightCoder leverages the `gemini-2.0-flash-thinking-exp-01-21` model. This model is currently chosen for its **extensive 1 million token context window**. This large context is crucial for processing potentially large project codebases in their entirety, ensuring the AI has a holistic understanding of the project.
 *   **Intuitive Natural Language Queries:**  Pose questions about your project in plain English and receive detailed, insightful responses.
 *   **Holistic Project Context:** InsightCoder analyzes your entire project, including Git diff information for the most up-to-date and relevant answers regarding recent changes.
@@ -16,17 +16,19 @@ Initially developed as an AI-powered assistant to aid in the development of the 
 *   **Enhance Developer Workflow & Understanding:** Accelerate onboarding to new projects, quickly grasp complex logic, and streamline your development process with AI-powered assistance.
 *   **Local Execution with Privacy in Mind:** Runs directly from your command line, ensuring your codebase data remains local and secure, only interacting with the LLM API during active query processing.
 *   **Conversation History (Project Memory):** InsightCoder saves each conversation to a Markdown file within the `project_info/conversations` directory.
-*   **Persistent Context:**  This conversation history serves as a form of "memory" for the project. By maintaining a history of interactions, InsightCoder can understand the ongoing context of your queries and provide more coherent and relevant responses in subsequent turns of the conversation.
+*   **Persistent Context:** This conversation history acts as a "memory," allowing InsightCoder to understand the ongoing context and provide more relevant responses in subsequent turns.
 *   **Large Context Window Necessity:** Saving conversation history is another reason why a large context window is essential.  As conversations progress, the accumulated history needs to be within the model's context to maintain continuity and understanding.
 
 ## InsightCoder vs. GitHub Copilot: Key Differentiators
+
+**Understanding Context Window & Token Usage:**  InsightCoder leverages a large context window (up to 1 million tokens) to analyze your entire codebase and conversation history.  **Tokens** are units of text that LLMs process.  The context window size limits the amount of text the AI can "remember" at once.  By keeping conversation history and codebase context within this window, InsightCoder provides informed and consistent answers.  You can monitor token usage in real-time in the UI to understand context consumption.
 
 It's important to understand that **InsightCoder is not intended to replace tools like GitHub Copilot but rather to complement them.** They serve different primary purposes and excel in different areas. Here's a comparison:
 
 | Feature             | InsightCoder                                  | GitHub Copilot                                  |
 |----------------------|-----------------------------------------------|-------------------------------------------------|
 | **Primary Purpose** | Codebase Understanding & Insights              | Code Completion & Generation                     |
-| **Context Scope**   | **Entire Project Codebase** (2M token window) | Primarily Current File & Immediate Context      |
+| **Context Scope**   | **Entire Project Codebase**                    | Primarily Current File & Immediate Context      |
 | **Analysis Focus**  | Project Architecture, Logic, Patterns          | Line-by-line Code, Snippets                     |
 | **Query Type**      | Natural Language Questions about Codebase      | Code Context for Suggestions                    |
 | **Conversation**    | Persistent Conversation History               | Contextual within Current Editing Session        |
@@ -54,7 +56,7 @@ It's important to understand that **InsightCoder is not intended to replace tool
 1.  **Clone the InsightCoder GitHub Repository:**
 
     ```bash
-    git clone https://github.com/volotat/InsightCoder 
+    git clone https://github.com/volotat/InsightCoder
     cd InsightCoder
     ```
 
@@ -92,12 +94,24 @@ To analyze a codebase in a directory other than the current one, use the `--proj
 To analyze a project located at `/path/to/your/project`, run:
 
 ```bash
-python ask.py --p /path/to/your/project
+python ask.py -p /path/to/your/project
 ```
-
+ 
 Replace `/path/to/your/project` with the actual path to the project you want to analyze.
 
-If you omit the `--project-path` argument, InsightCoder will analyze the codebase in the current directory where you run the `ask.py` script.
+If you omit the `--project-path` argument, InsightCoder will analyze the codebase in the current directory where you run the ask.py script.
+
+## Specifying a Custom Conversation Folder
+
+By default, conversation history is saved in the project_info/conversations directory within your project. To specify a custom folder for saving conversations, use the `--conversation-path` or `-c` argument:
+Example:
+To save conversations in /path/to/your/custom/conversations_folder, run:
+```bash
+python ask.py -c /path/to/your/custom/conversations_folder
+```
+ 
+Replace `/path/to/your/custom/conversations_folder` with the actual path to your desired conversation folder.
+If you omit the `--conversation-path` argument, conversations will be saved in the default `/path/to/your/project/project_info/conversations` directory.
 
 ## Quick Start Guide
 
@@ -120,10 +134,18 @@ If you omit the `--project-path` argument, InsightCoder will analyze the codebas
 ## Example Prompts
 
 *   "Describe the overall architecture of this software project."
+*   "Explain the purpose and functionality of the `MainWindow` class in `ui.py`."
 *   "What is the purpose of the `CachedFileHash` class and how does it improve performance?"
-*   "Identify potential memory leaks or performance bottlenecks within the `pages/images/engine.py` file."
+*   "Are there any potential performance bottlenecks in the `chat_utils.py` file? If so, how can they be addressed?"
 *   "Explain the logic behind the music recommendation scoring system."
 *   "Suggest refactoring strategies to enhance the modularity and maintainability of `app.py`."
+*   "How are API keys handled and secured within this project?"
+*   "What are the key data structures used in `worker.py` and how do they contribute to the chat functionality?"
+*   "Explain the role of signals and slots in the PyQt5 UI implementation."
+*   "If I wanted to add support for a new Large Language Model, where would I need to make changes in the codebase?"
+*   "Could you generate a class diagram representing the main classes and their relationships in this project?"
+*   "What are the main differences between `ChatWorker` and `TokenCountWorker` classes?"
+*   "How does InsightCoder handle errors and exceptions during API calls or file processing?"
 
 ## Future Directions
 
@@ -144,10 +166,9 @@ While named "InsightCoder," this tool is not limited to just programming code. *
 
 **As long as your project is in Git, InsightCoder can provide AI-powered insights by analyzing its content and structure.** Simply point InsightCoder to the root directory of your Git repository using the `--project-path` argument, and start asking questions!
 
-## Contributing
+## Contributing & Bug Reports
 
 Bug reports and questions are welcome! If you encounter any issues, questions or have suggestions for improvements, please [open a new issue](https://github.com/volotat/InsightCoder/issues) on GitHub.
- 
-
 ## License
 InsightCoder is released under the [MIT License](LICENSE).
+
