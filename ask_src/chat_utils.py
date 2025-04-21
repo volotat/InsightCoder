@@ -44,7 +44,6 @@ def get_codebase(input_dir, conversation_dir): # Accept input_dir as argument
 
     files = []
     for root, dirs, filenames in os.walk(input_dir): # Use input_dir here
-        print(f"Processing directory: {dirs}")
         dirs[:] = [d for d in dirs if not d.startswith('.')]
 
         # Exclude directories
@@ -136,6 +135,10 @@ Use specific language syntax highlighting within code fences where applicable (e
 Answer user questions based on the provided codebase context and conversation history.
 If you have any confusion or need more information, ask the user questions for clarification before presenting the changes.
 If you cannot guarantee a specific behavior that is required by a given task in the code you suggest, make sure to note that in your response.
+If you are not sure about something, make sure to point it out and highlight the weak points in your response if there are any.
+If you change any file, please print the whole content of the file, so it could be easily replaced as whole with the proposed changes. If files became too large consider splitting them into smaller parts as a refactoring routine. Do not print any files with partial changes. It is highly important to not suppress any lines even if they are not changed, as the file is usually copy-pasted as a whole and may lead to the loss of important parts of the code.
+Do not try to implement everything at once. Split complex tasks into multiple phases and implement them step by step, providing test cases for each phase and asking for user's confirmation before proceeding to the next step.
+Prioritize concise and simple solutions when possible and sufficient.
 
 {full_context}"""
     
@@ -169,16 +172,22 @@ def start_chat_session(project_path, conversation_path): # Accept project_path a
     # history = load_conversation(os.path.join(project_path, "project_info", "conversations", "conversation_2.md"))
 
     chat = client.chats.create(
-        model="gemini-2.0-flash-thinking-exp-01-21",
+        #model="gemini-2.5-pro-exp-03-25",
+        model="gemini-2.5-flash-preview-04-17",
+        #model="gemini-2.0-flash-thinking-exp-01-21",
         #model="gemini-2.0-pro-exp-02-05",
         #model="gemini-2.0-flash-lite-preview-02-05",
         config=types.GenerateContentConfig(
             system_instruction=system_prompt,
-            temperature=0.8,
+            temperature=1,
             top_p=0.95,
-            top_k=40,
-            max_output_tokens=8192 * 2,
-            response_mime_type="text/plain"),
+            top_k=64,
+            max_output_tokens=65536,
+            response_mime_type="text/plain",
+            thinking_config=types.ThinkingConfig(
+                thinking_budget=8192
+            )
+        ),
         history = [])
 
     return client, chat 

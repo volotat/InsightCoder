@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v0.1.4] - 2025-04-21 
+
+### Changed
+- Refined `README.md` for greater conciseness and accuracy, updating information on features and getting started.
+- Updated the referenced LLM model name (`gemini-2.5-flash-preview-04-17`) and its context window size (up to 1M tokens) in `README.md` to reflect the model used in `chat_utils.py`.
+- Updated main prompt for better context and clarity.
+
+### Fixed
+- Resolved an issue when the conversation were not saved properly after the LLM complete the output.
 
 ## [v0.1.3] - 2025-02-18
 

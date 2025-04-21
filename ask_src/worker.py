@@ -4,6 +4,7 @@ from PyQt5.QtCore import pyqtSignal, QObject
 from ask_src.diff_detector import detect_diff_blocks # Import detect_diff_blocks
 import os
 import traceback
+import json
 
 class ChatSignals(QObject):
     update_text = pyqtSignal(str, bool, str)
@@ -22,8 +23,9 @@ class ChatWorker(threading.Thread):
         reply_text = ""
         try:
             response = self.chat.send_message_stream(self.message)
+            print("response", response)
             for chunk in response:
-                reply_text += chunk.text
+                reply_text += chunk.text if chunk.text is not None else ""
                 updated_md = history + f"\n\n**Model:**\n\n{reply_text}\n\n"
                 updated_html = markdown.markdown(updated_md, extensions=["fenced_code", "codehilite", "nl2br"])
                 self.callback_signal.emit(updated_html, False, "")
