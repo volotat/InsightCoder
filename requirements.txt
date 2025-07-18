@@ -1,4 +1,3 @@
 PyQt5
 google-generativeai
 markdown
-Pygments

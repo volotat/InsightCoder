@@ -6,6 +6,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
+## [v0.1.7] - 2025-07-18
+
+### Changed
+- **Syntax Highlighting Engine:** Replaced the server-side `Pygments` library with the client-side `highlight.js` library for rendering syntax-highlighted code blocks. This change leverages `QWebEngineView` to delegate highlighting to JavaScript, resulting in significantly more robust and accurate code formatting in the chat display.
+- **UI Rendering Logic:** Refactored `ask_src/ui.py` and `ask_src/worker.py` to remove the `codehilite` Markdown extension and instead load `highlight.js` assets and trigger the highlighting script within the `QWebEngineView`.
+
+### Removed
+- **`Pygments` Dependency:** Removed `Pygments` from `requirements.txt` and deleted the obsolete `pygments_default.css` file, simplifying the project's dependencies.
+
 ## [v0.1.6] - 2025-07-18
 
 ### Added

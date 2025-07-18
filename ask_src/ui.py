@@ -2,7 +2,7 @@ import os
 import re
 import glob, time
 import markdown
-from PyQt5.QtCore import pyqtSignal, pyqtSlot, Qt, QTimer
+from PyQt5.QtCore import pyqtSignal, pyqtSlot, Qt, QTimer, QUrl
 from PyQt5.QtWidgets import QMainWindow, QPushButton, QVBoxLayout, QHBoxLayout, QWidget, QTextEdit, QLabel
 from PyQt5.QtWebEngineWidgets import QWebEngineView
 
@@ -80,28 +80,28 @@ class MainWindow(QMainWindow):
         self.web_view = QWebEngineView()
         self.web_view.page().profile().setHttpAcceptLanguage("en-us")
 
-        # Load Pygments CSS and base styles once
-        self.html_style = ""
-        pygments_css_path = os.path.join(os.path.dirname(__file__), "pygments_default.css")
-        try:
-            with open(pygments_css_path, "r", encoding="utf-8") as css_file:
-                self.html_style = f"""
-                    body {{ 
-                        font-family: monospace; 
-                        font-size: 12pt; 
-                        background-color: #fdfdfd; 
-                    }}
-                    {css_file.read()}
-                """
-        except Exception as e:
-            print("Error loading pygments CSS:", e)
-            self.html_style = "body { font-family: monospace; font-size: 12pt; }"
+        # Define the base path for local assets like CSS and JS for the web view
+        self.assets_path = os.path.join(os.path.dirname(__file__), "assets")
+
+        # Define the base HTML styles. Syntax highlighting styles will be loaded from a file.
+        self.html_style = """
+            body { 
+                font-family: monospace; 
+                font-size: 12pt; 
+                background-color: #282c34; /* Match atom-one-dark background */
+                color: #abb2bf;           /* Match atom-one-dark foreground */
+            }
+            a { color: #61afef; } /* A nice blue for links */
+            pre {
+                white-space: pre-wrap; /* Allow wrapping for long lines */
+                word-wrap: break-word; /* Break long words */
+            }
+        """
 
         # Set initial content (the welcome page)
         initial_html_body = markdown.markdown(
             self.chat_history,
-            extensions=["fenced_code", "codehilite", "nl2br"],
-            extension_configs={'codehilite': {'guess_lang': False}}
+            extensions=["fenced_code", "nl2br"]
         )
         self.update_chat_display(initial_html_body, False, "") # Use the update method to apply styles
 
@@ -204,17 +204,28 @@ class MainWindow(QMainWindow):
 
     @pyqtSlot(str, bool, str)
     def update_chat_display(self, html_body, final, final_md):
+        # The base URL is crucial for loading local CSS and JS files in QWebEngineView
+        base_url = QUrl.fromLocalFile(self.assets_path + os.path.sep)
+
         full_html = f"""
         <html>
         <head>
+            <meta charset="UTF-8">
+            <link rel="stylesheet" href="atom-one-dark.min.css">
             <style>{self.html_style}</style>
+            <script src="highlight.min.js"></script>
         </head>
         <body>
             {html_body}
+            <script>
+                // This script runs after the body is loaded.
+                // It finds all <pre><code> blocks and applies highlighting.
+                hljs.highlightAll();
+            </script>
         </body>
         </html>
         """
-        self.web_view.setHtml(full_html)
+        self.web_view.setHtml(full_html, baseUrl=base_url)
         # Use a timeout to ensure the scroll happens after the DOM update
         if self.conversation_started: # Only auto-scroll if conversation is active
              self.web_view.page().runJavaScript("setTimeout(function() {{ window.scrollTo(0, document.body.scrollHeight); }}, 100);")
@@ -322,8 +333,7 @@ class MainWindow(QMainWindow):
         self.chat_history += f"\n\n**User:**\n\n{user_msg}\n\n"
         html_body = markdown.markdown(
             self.chat_history,
-            extensions=["fenced_code", "codehilite", "nl2br"],
-            extension_configs={'codehilite': {'guess_lang': False}}
+            extensions=["fenced_code", "nl2br"]
         )
         self.update_chat_display(html_body, False, "")
 
