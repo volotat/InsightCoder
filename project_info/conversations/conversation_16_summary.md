@@ -1,0 +1,3 @@
+The user requested two main additions to the project roadmap:
+1.  Prioritize allowing users to specify a custom conversation folder and ensure conversation history is loaded even if the folder is ignored by Git (`.gitignore`). The AI updated the roadmap to reflect this high priority and explained that the current file system access logic should already handle `.gitignore` for loading.
+2.  Add the ability to detect `diff` sections in AI output and prompt the user via a pop-up with a visual diff to apply the changes to the specified file. The AI updated the roadmap to include this as a medium-term goal with detailed implementation steps.

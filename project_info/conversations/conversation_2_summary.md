@@ -1,0 +1,5 @@
+This conversation focused on setting up the InsightCoder project after it became a separate entity. Key points include:
+
+*   **Dependencies (`requirements.txt`):** The AI identified and listed the necessary Python packages (`PyQt5`, `google-generativeai`, `markdown`, `Pygments`) required for the project to run, explaining the purpose of each.
+*   **Codebase Identity Cleanup:** The user requested removing mentions of the old project name ("Anagnorisis"). The AI identified specific code lines in `ask_src/chat_utils.py` (file path prefix, system prompt) and `ask_src/ui.py` (window title) and provided code modifications to replace "Anagnorisis" with "InsightCoder".
+*   **Conversation Saving Location:** The user asked to change the directory for saving conversations. The AI provided a code diff for `ask_src/ui.py` to update the conversation directory path to `project_info/conversations`.

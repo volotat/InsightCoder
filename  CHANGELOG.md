@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v0.1.5] - 2025-07-18
+
+### Added
+- **Conversation Summarization:** Implemented an intelligent system to automatically summarize conversations using the LLM. This provides long-term memory while significantly reducing the token count sent to the model, making context management more efficient and cost-effective.
+- **`SummaryWorker`:** Introduced a new background thread in `ask_src/worker.py` to handle conversation summarization asynchronously. This ensures the UI remains responsive while summaries are being generated after a conversation is saved.
+- **Startup Summarization:** Added logic to `ask.py` that automatically detects and summarizes any previously unsummarized conversation files when the application starts. This ensures all history is processed into efficient summaries before the chat session begins.
+- **`.gitignore` Integration:** The `get_codebase` function now respects `.gitignore` rules by using the `git check-ignore` command, leading to a more accurate and relevant codebase context.
+- **`reconstruct_markdown_history`:** A new helper function in `chat_utils.py` to convert saved conversation data back into a full markdown string, which is necessary for the summarization process.
+
+### Changed
+- **Context Management:** The system prompt (`create_system_prompt`) now loads concise conversation summaries instead of full conversation histories, optimizing token usage and improving performance.
+- **Application Startup Flow:** Refactored `ask.py` to configure the API client once at startup and pass it to all necessary components. The startup sequence now completes all pending summarization tasks before launching the main UI.
+- **Conversation Saving:** The `save_conversation_md` method in `ui.py` now triggers the `SummaryWorker` to create a summary file after successfully saving the full conversation markdown.
+
+### Fixed
+- **Conversation Counter:** Corrected an issue where the conversation counter could be miscalculated. It now accurately determines the next conversation number by checking for both `conversation_N.md` and `conversation_N_summary.md` files.
+- **Path Exclusion:** Improved the logic for excluding the conversation directory from codebase analysis, making it more robust, especially when custom conversation paths are used.
+
 ## [v0.1.4] - 2025-04-21 
 
 ### Changed

@@ -5,9 +5,14 @@ from ask_src.diff_detector import detect_diff_blocks # Import detect_diff_blocks
 import os
 import traceback
 import json
+from ask_src.chat_utils import summarize_conversation
 
 class ChatSignals(QObject):
-    update_text = pyqtSignal(str, bool, str)
+    update_text = pyqtSignal(str, bool, str) 
+    #diff_detected = pyqtSignal(str, str) # Signal for detected diff and file path
+    # Optional signals for summarization feedback
+    summarization_complete = pyqtSignal(str) # Signal emitted when summarization is complete, carries filename
+    summarization_error = pyqtSignal(str) # Signal emitted if summarization fails, carries error message
 
 class ChatWorker(threading.Thread):
     def __init__(self, message, current_history, callback_signal, chat, project_path):
@@ -64,3 +69,43 @@ class ChatWorker(threading.Thread):
             # Do not change the chat's HTML; emit the existing history unchanged
             #html = markdown.markdown(history, extensions=["fenced_code", "codehilite", "nl2br"])
             #self.callback_signal.emit(html, True, history)
+
+# Add SummaryWorker class
+class SummaryWorker(threading.Thread):
+    def __init__(self, client, chat_history, summary_filepath, callback_signals):
+        super().__init__(daemon=True)
+        self.client = client
+        self.chat_history = chat_history
+        self.summary_filepath = summary_filepath
+        # Use ChatSignals for callbacks
+        self.callback_signals = callback_signals # This should be the ChatSignals instance from MainWindow
+
+    def run(self):
+        print(f"Starting summarization for {os.path.basename(self.summary_filepath)}...")
+        # Optional: Emit signal indicating summarization started (if you have a UI element for it)
+        # self.callback_signals.summarization_complete.emit(f"Summarizing {os.path.basename(self.summary_filepath)}...")
+
+        summary = summarize_conversation(self.client, self.chat_history)
+
+        if summary is not None:
+            try:
+                # Ensure the directory exists before writing (redundant with ui.py/ask.py, but safe)
+                summary_dir = os.path.dirname(self.summary_filepath)
+                os.makedirs(summary_dir, exist_ok=True)
+
+                with open(self.summary_filepath, 'w', encoding='utf-8') as f:
+                    f.write(summary)
+                print(f"Summarization complete: {os.path.basename(self.summary_filepath)}")
+                # Optional: Emit signal to UI for success feedback
+                # self.callback_signals.summarization_complete.emit(f"Summary saved: {os.path.basename(self.summary_filepath)}")
+            except Exception as e:
+                error_message = f"Error saving summary to {os.path.basename(self.summary_filepath)}: {e}"
+                print(error_message)
+                traceback.print_exc() # Print traceback for debugging
+                # Optional: Emit signal to UI for error feedback
+                # self.callback_signals.summarization_error.emit(error_message)
+        else:
+            error_message = f"Summarization failed for {os.path.basename(self.summary_filepath)}."
+            print(error_message)
+            # Optional: Emit signal to UI for error feedback
+            # self.callback_signals.summarization_error.emit(error_message)

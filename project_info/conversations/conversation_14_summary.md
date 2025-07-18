@@ -1,0 +1,4 @@
+The user reported UI freezing when the token count was updated. The AI identified this as a result of the token counting operation blocking the main UI thread. The suggested solution is to move the token counting to a separate background thread. This is implemented by:
+- Creating a new `TokenCountWorker` class (inheriting from `threading.Thread`) to perform the counting in the background.
+- Creating a `TokenCountSignals` class to manage signals emitted by the worker to update the UI.
+- Modifying the UI code (`ui.py`) to start the worker when needed and connect the worker's signals to UI slots that update the token count label in the main thread.

@@ -1,0 +1,3 @@
+The user requested two main tasks:
+1.  **Simplify the `README.md` file:** The AI provided a streamlined `README.md` focusing on core features, a concise comparison with GitHub Copilot, and simplified installation/usage instructions.
+2.  **Create a changelog from recent diffs and conversation history:** The AI generated a `CHANGELOG.md` entry for `v0.1.5`, highlighting new features like LLM-based conversation summarization and a dedicated `SummaryWorker`, changes to context management and startup flow, and fixes for the conversation counter and path exclusion.

@@ -5,7 +5,8 @@ import markdown
 from PyQt5.QtCore import pyqtSignal, pyqtSlot, Qt, QTimer
 from PyQt5.QtWidgets import QMainWindow, QTextBrowser, QPushButton, QVBoxLayout, QHBoxLayout, QWidget, QTextEdit, QLabel
 
-from ask_src.worker import ChatWorker
+# Import all necessary workers and signals
+from ask_src.worker import ChatWorker, SummaryWorker, ChatSignals
 from ask_src.token_worker import TokenCountWorker, TokenCountSignals
 
 # Subclass QTextEdit to capture Enter key
@@ -23,7 +24,7 @@ class EnterTextEdit(QTextEdit):
             super().keyPressEvent(event)
 
 class MainWindow(QMainWindow):
-    def __init__(self, client, chat, chat_signals, project_path, conversation_path):
+    def __init__(self, client, chat, chat_signals, project_path, conversation_path): # Ensure client is passed here
         super().__init__()
         self.resize(1200, 800)
 
@@ -31,14 +32,25 @@ class MainWindow(QMainWindow):
         project_name = os.path.basename(os.path.abspath(project_path)) if project_path != "." else "InsightCoder"
         self.setWindowTitle(f"{project_name} Codebase Chat")
 
-        self.client = client  # OpenAI API client instance
+        self.client = client  # Store client instance passed from ask.py
         self.token_count_signals = TokenCountSignals() # Create TokenCountSignals instance
         self.chat = chat  # chat session instance from chat_utils
-        self.chat_history = ""
-        self.chat_signals = chat_signals
-        self.project_path = project_path
+        self.chat_history = "" # Stores the current conversation's full markdown history
+        self.chat_signals = chat_signals # Instance of ChatSignals
 
+        self.project_path = project_path # Store project_path
+        self.conversation_dir = conversation_path # Store conversation_path
+
+        # Connect chat signals to UI slots
         self.chat_signals.update_text.connect(self.update_chat_display)
+        # Connect diff_detected signal to a slot for showing confirmation dialog (for future step)
+        # self.chat_signals.diff_detected.connect(self.show_diff_confirmation_dialog)
+
+        # Optional: Connect summarization signals to UI slots for feedback
+        # self.chat_signals.summarization_complete.connect(self.handle_summarization_complete)
+        # self.chat_signals.summarization_error.connect(self.handle_summarization_error)
+
+
         self.text_browser = QTextBrowser()
         self.text_browser.setOpenExternalLinks(True)
         self.text_browser.setHtml(markdown.markdown(self.chat_history, extensions=["fenced_code", "codehilite", "nl2br"]))
@@ -50,13 +62,12 @@ class MainWindow(QMainWindow):
                 self.text_browser.document().setDefaultStyleSheet(pygments_css)
         except Exception as e:
             print("Error loading pygments CSS:", e)
-        
+
         self.input_edit = EnterTextEdit()
         self.input_edit.setFixedHeight(30)
         self.input_edit.setStyleSheet("QTextEdit { font-family: monospace; font-size: 12pt; }")
         self.input_edit.textChanged.connect(self.adjust_input_height)
         self.input_edit.enterPressed.connect(self.send_message)
-        # self.input_edit.textChanged.connect(self.update_token_count_display) # Disconnect direct connection
 
         self.token_count_timer = QTimer() # Timer for debouncing token count updates
         self.token_count_timer.setInterval(1000)  # 1000 ms delay
@@ -85,17 +96,22 @@ class MainWindow(QMainWindow):
         container.setLayout(layout)
         self.setCentralWidget(container)
 
-        self.conversation_dir = conversation_path
-    
+        # Directory creation is handled in ask.py, but ensure it's stored
+        # self.conversation_dir is already set above
+
         # Set conversation_counter based on existing conversation files.
-        pattern = os.path.join(self.conversation_dir, "conversation_*.md")
-        existing = glob.glob(pattern)
-        numbers = []
-        for filepath in existing:
+        # Look for both .md and _summary.md files to get the highest number
+        pattern_md = os.path.join(self.conversation_dir, "conversation_*.md")
+        pattern_summary = os.path.join(self.conversation_dir, "conversation_*_summary.md")
+        existing_md = glob.glob(pattern_md)
+        existing_summary = glob.glob(pattern_summary)
+
+        numbers = set()
+        for filepath in existing_md + existing_summary:
             basename = os.path.basename(filepath)
-            match = re.search(r'conversation_(\d+)\.md', basename)
+            match = re.search(r'conversation_(\d+)', basename)
             if match:
-                numbers.append(int(match.group(1)))
+                numbers.add(int(match.group(1)))
         self.conversation_counter = max(numbers) + 1 if numbers else 1
 
     @pyqtSlot(str, bool, str)
@@ -104,9 +120,9 @@ class MainWindow(QMainWindow):
         self.text_browser.verticalScrollBar().setValue(self.text_browser.verticalScrollBar().maximum())
 
         if final:
-            self.chat_history = final_md
+            self.chat_history = final_md # Update chat_history with final markdown
             # self.save_conversation_html() # This is for debug only
-            self.save_conversation_md()
+            self.save_conversation_md() # Save full conversation and trigger summarization
 
     def save_conversation_html(self):
         """Saves the current conversation in QTextBrowser to an HTML file."""
@@ -123,15 +139,49 @@ class MainWindow(QMainWindow):
             print(f"Error saving conversation: {e}") # Handle potential errors
 
     def save_conversation_md(self):
-        """Saves the raw markdown conversation to a .md file."""
+        """Saves the raw markdown conversation to a .md file and triggers summarization."""
+        if not self.chat_history.strip():
+            print("Skipping save: Empty conversation history.")
+            # Do NOT increment counter if not saving
+            return # Don't save empty conversations
+
         try:
-            filename = f"conversation_{self.conversation_counter}.md"
-            filepath = os.path.join(self.conversation_dir, filename)
-            with open(filepath, 'w', encoding='utf-8') as f:
+            # Calculate the next conversation number BEFORE saving/summarizing
+            # This number will be used for the current conversation being saved
+            current_conv_number = self.conversation_counter
+
+            filename_md = f"conversation_{current_conv_number}.md"
+            filepath_md = os.path.join(self.conversation_dir, filename_md)
+
+            # Ensure conversation directory exists (redundant with ask.py, but safe)
+            os.makedirs(self.conversation_dir, exist_ok=True)
+
+            with open(filepath_md, 'w', encoding='utf-8') as f:
                 f.write(self.chat_history)
-            print(f"Markdown conversation saved to: {filepath}")
+            print(f"Markdown conversation saved to: {filepath_md}")
+
+            # --- Trigger Summarization ---
+            filename_summary = f"conversation_{current_conv_number}_summary.md"
+            filepath_summary = os.path.join(self.conversation_dir, filename_summary)
+
+            # Only summarize if the summary file doesn't already exist
+            if not os.path.exists(filepath_summary):
+                print(f"Summary file does not exist: {filepath_summary}. Triggering summarization.")
+                # Start SummaryWorker in a new thread
+                # Pass the client, the full history, the summary filepath, and the signals object
+                summary_worker = SummaryWorker(self.client, self.chat_history, filepath_summary, self.chat_signals)
+                summary_worker.start()
+            else:
+                 print(f"Summary file already exists: {filepath_summary}. Skipping summarization.")
+            # --- End Trigger Summarization ---
+
+            # Increment counter for the *next* conversation ONLY AFTER THIS ONE IS HANDLED
+            # This happens after saving the main file and triggering summarization
+            self.conversation_counter += 1
+
         except Exception as e:
-            print(f"Error saving markdown conversation: {e}")
+            print(f"Error saving markdown conversation or triggering summarization: {e}")
+            traceback.print_exc() # Print traceback for debugging
 
     @pyqtSlot()
     def start_token_count_timer(self):
@@ -169,3 +219,17 @@ class MainWindow(QMainWindow):
         
         worker = ChatWorker(user_msg, self.chat_history, self.chat_signals.update_text, self.chat, self.project_path)
         worker.start()
+
+    # Optional: Slot to handle summarization complete feedback (e.g., update a status bar)
+    @pyqtSlot(str)
+    def handle_summarization_complete(self, message):
+        print(f"UI Feedback: {message}")
+        # Example: update a status bar
+        # self.statusBar().showMessage(message, 5000) # Requires a QStatusBar
+
+    # Optional: Slot to handle summarization error feedback
+    @pyqtSlot(str)
+    def handle_summarization_error(self, message):
+        print(f"UI Error Feedback: {message}")
+        # Example: show a warning icon or message
+        # QMessageBox.warning(self, "Summarization Error", message)
