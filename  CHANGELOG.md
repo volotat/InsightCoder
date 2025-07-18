@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+
+## [v0.1.6] - 2025-07-18
+
+### Added
+- **"Reload Context" Button:** Introduced a "Reload Context" button in the UI. This allows users to re-scan the project's codebase on demand, updating the AI's knowledge with the latest file changes without losing the current conversation history.
+- **Welcome Screen:** Added an initial welcome message that is displayed on application startup. It provides guidance and example prompts for new users and is replaced by the conversation once the first message is sent.
+
+### Changed
+- **Chat Rendering Engine:** Replaced the `QTextBrowser` widget with `QWebEngineView` for displaying chat messages. This change significantly improves the rendering quality and accuracy of Markdown and syntax-highlighted code blocks by leveraging a full web engine.
+- **UI Logic:** Refactored `ask_src/ui.py` to support `QWebEngineView`, which involved embedding styled content within a full HTML structure and handling UI interactions like scrolling via JavaScript.
+
 ## [v0.1.5] - 2025-07-18
 
 ### Added

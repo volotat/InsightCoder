@@ -32,10 +32,18 @@ class ChatWorker(threading.Thread):
             for chunk in response:
                 reply_text += chunk.text if chunk.text is not None else ""
                 updated_md = history + f"\n\n**Model:**\n\n{reply_text}\n\n"
-                updated_html = markdown.markdown(updated_md, extensions=["fenced_code", "codehilite", "nl2br"])
+                updated_html = markdown.markdown(
+                    updated_md,
+                    extensions=["fenced_code", "codehilite", "nl2br"],
+                    extension_configs={'codehilite': {'guess_lang': False}}
+                )
                 self.callback_signal.emit(updated_html, False, "")
             final_md = history + f"\n\n**Model:**\n\n{reply_text}\n\n"
-            final_html = markdown.markdown(final_md, extensions=["fenced_code", "codehilite", "nl2br"])
+            final_html = markdown.markdown(
+                final_md,
+                extensions=["fenced_code", "codehilite", "nl2br"],
+                extension_configs={'codehilite': {'guess_lang': False}}
+            )
 
             diff_blocks = detect_diff_blocks(final_md) # Call detect_diff_blocks to get a list of dictionaries
 

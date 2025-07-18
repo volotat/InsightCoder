@@ -73,12 +73,15 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
 .vm { color: #19177C } /* Name.Variable.Magic */
 .il { color: #666666 } /* Literal.Number.Integer.Long */
 
-pre, .codehilite {
+.codehilite {
     background-color: #f8f8f2; /* Slightly grey-beige */
     border: 1px solid #ccc;    /* Thin border */
     padding: 10px;
     border-radius: 5px;
     overflow: auto;
+}
+
+.codehilite pre {
     line-height: 100%;  /* Reduce extra spacing */
     margin: 0;          /* Remove extra margin */
 }
