@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - **"Reload Context" Button:** Introduced a "Reload Context" button in the UI. This allows users to re-scan the project's codebase on demand, updating the AI's knowledge with the latest file changes without losing the current conversation history.
+- **`ContextReloadWorker`:** Implemented a new background worker in `ask_src/worker.py` to handle the context reloading process asynchronously. This ensures the UI remains responsive while a new chat session is prepared with the updated context and existing conversation history.
 - **Welcome Screen:** Added an initial welcome message that is displayed on application startup. It provides guidance and example prompts for new users and is replaced by the conversation once the first message is sent.
 
 ### Changed

@@ -5,10 +5,13 @@ from ask_src.diff_detector import detect_diff_blocks # Import detect_diff_blocks
 import os
 import traceback
 import json
-from ask_src.chat_utils import summarize_conversation
+from google.genai import types # Add this import
+# Add create_system_prompt to imports
+from ask_src.chat_utils import summarize_conversation, create_system_prompt
 
 class ChatSignals(QObject):
     update_text = pyqtSignal(str, bool, str) 
+    context_reloaded = pyqtSignal(object) # Signal for when the context reload is complete
     #diff_detected = pyqtSignal(str, str) # Signal for detected diff and file path
     # Optional signals for summarization feedback
     summarization_complete = pyqtSignal(str) # Signal emitted when summarization is complete, carries filename
@@ -77,6 +80,45 @@ class ChatWorker(threading.Thread):
             # Do not change the chat's HTML; emit the existing history unchanged
             #html = markdown.markdown(history, extensions=["fenced_code", "codehilite", "nl2br"])
             #self.callback_signal.emit(html, True, history)
+
+# --- Start: New ContextReloadWorker class ---
+class ContextReloadWorker(threading.Thread):
+    def __init__(self, client, project_path, conversation_path, current_history, callback_signal):
+        super().__init__(daemon=True)
+        self.client = client
+        self.project_path = project_path
+        self.conversation_path = conversation_path
+        self.current_history = current_history
+        self.callback_signal = callback_signal
+
+    def run(self):
+        try:
+            print("ContextReloadWorker: Starting context reload...")
+            system_prompt = create_system_prompt(self.project_path, self.conversation_path)
+
+            # This logic for creating a chat session is duplicated from chat_utils.start_chat_session.
+            # This could be refactored into a shared helper function in the future.
+            new_chat = self.client.chats.create(
+                model="gemini-2.5-pro",
+                config=types.GenerateContentConfig(
+                    system_instruction=system_prompt,
+                    temperature=1,
+                    top_p=0.95,
+                    top_k=64,
+                    max_output_tokens=65536,
+                    response_mime_type="text/plain",
+                ),
+                history=self.current_history
+            )
+            print("ContextReloadWorker: New chat session created. Emitting signal.")
+            self.callback_signal.emit(new_chat)
+        except Exception as e:
+            print(f"Error in ContextReloadWorker: {e}")
+            traceback.print_exc()
+            # In a future step, we could add an error signal to inform the UI.
+            self.callback_signal.emit(None) # Emit None on error
+# --- End: New ContextReloadWorker class ---
+
 
 # Add SummaryWorker class
 class SummaryWorker(threading.Thread):
