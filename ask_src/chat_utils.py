@@ -33,7 +33,8 @@ def get_codebase(input_dir, conversation_dir): # Accept input_dir and conversati
         '.html', '.css', '.scss', '.less', '.yaml', '.yml',
         '.txt', '.md', '.json', '.xml', '.csv', '.ini',
         '.cfg', '.conf', '.sh', '.bat', '.ps1', '.go',
-        '.rs', '.php', '.rb', '.lua', '.sql', '.toml'
+        '.rs', '.php', '.rb', '.lua', '.sql', '.toml', 
+        '.mdx'
     }
     excluded_extensions = {'.min.js', '.min.css', '.map', '.csv',
                              '.io.js', '.io.css', '.esm.js', '.esm.css', '.cjs.js', '.cjs.css'}
@@ -211,7 +212,7 @@ Concise Summary:
         response = client.models.generate_content(
              contents=summary_prompt,
              #model="gemini-2.5-flash-preview-04-17", # Use the main model for summarization
-             model="gemini-2.5-flash-preview-05-20", # Use the main model for summarization
+             model="gemini-2.5-flash", # Use the main model for summarization
              #model="gemini-2.5-pro",
              config=types.GenerateContentConfig(
                 temperature=0.5,
@@ -319,6 +320,7 @@ Prioritize concise and simple solutions when possible and sufficient.
 Try to show the minimal changes in code needed, expect if it is absolutely necessary to clarify the changes with more information.
 Try to preserve original comments and docstrings in the existing code as it could be valuable information for the developer.
 If the past of the code have not been change preserve its original formatting and comments, don't try to minimize it unless asked specifically.
+Don't waste time by shilling the user. Go straight to the point. The user needs your expertise, not your approval.
 
 {full_context}"""
     # If you change any file, please print the whole content of the file, so it could be easily replaced as whole with the proposed changes. If files became too large consider splitting them into smaller parts as a refactoring routine. Do not print any files with partial changes. It is highly important to not suppress any lines even if they are not changed, as the file is usually copy-pasted as a whole and may lead to the loss of important parts of the code.

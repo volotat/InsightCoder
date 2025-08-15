@@ -43,8 +43,8 @@ Use **InsightCoder** for deep analysis and understanding. Use **Copilot** for ac
 
 2.  **Set Up Virtual Environment (Recommended):**
     ```bash
-    python -m venv .env
-    source .env/bin/activate  # On Windows, use: .env\Scripts\activate
+    python -m venv .venv
+    source .venv/bin/activate  # On Windows, use: .venv\Scripts\activate
     ```
 
 3.  **Install Dependencies:**
@@ -82,6 +82,7 @@ Use **InsightCoder** for deep analysis and understanding. Use **Copilot** for ac
     ```bash
     python ask.py -p /path/to/your/project -c /path/to/your/conversations
     ```
+
 
 ## Example Prompts
 
