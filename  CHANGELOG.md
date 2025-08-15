@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v0.2.0] - 2025-08-16
+
+### Changed
+- **Complete Frontend and Architectural Rewrite:** The entire application frontend has been migrated from **PyQt5** to **Flet**. This is a ground-up rewrite aimed at modernizing the codebase, improving maintainability, and enabling simple cross-platform builds.
+- **Modernized Concurrency Model:** Replaced the previous multi-threaded worker architecture (`ChatWorker`, `TokenCountWorker`, etc.) and PyQt's signal/slot system with a native `asyncio` implementation. This simplifies the code, eliminates complex threading logic, and improves efficiency.
+    - Blocking operations (like API calls and file I/O) are now handled non-blockingly using `asyncio.to_thread`.
+    - Real-time features like the token counter's debouncing are now elegantly handled with `asyncio.sleep`, removing the need for `QTimer`.
+- **New Code Architecture:** Introduced a clean, three-tier architecture to separate concerns:
+    - **State Management (`AppState`):** A central class holds all application state, making data flow predictable.
+    - **Service Layer (`app_services.py`):** All backend logic (API calls, file operations, context management) is encapsulated in asynchronous services (`ChatService`, `ContextService`, etc.).
+    - **UI Components:** The UI is broken down into logical Flet components (`ChatView`, `InputBar`) for better organization and reusability.
+- **UI Rendering:** Replaced `QWebEngineView` with Flet's native `ft.Markdown` control for robust, built-in rendering of chat messages and code blocks.
+
+### Removed
+- **PyQt5 and PyQtWebEngine Dependencies:** Removed all PyQt-related libraries from `requirements.txt`, significantly reducing the project's dependency footprint.
+- **Obsolete UI and Worker Code:** Deleted the legacy PyQt UI file (`ask_src/ui.py`), the original entry point (`ask.py`), and the PyQt-specific worker patterns. The new application entry point is the refactored `flet_ask.py`.
 
 ## [v0.1.7] - 2025-07-18
 
