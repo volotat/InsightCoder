@@ -6,6 +6,10 @@ It was born out of the need for a powerful codebase analysis tool during the dev
 
 **⚠️ Important Privacy Notice**: InsightCoder sends your project's source code to an external LLM service (Google Gemini) for analysis. **Do not use this tool on repositories containing personal, confidential, or sensitive information.**
 
+<!-- Screenshot of the program -->
+![Screenshot](media/preview.png)  
+Project preview
+
 ## Core Features
 
 *   **Holistic Project Analysis:** Analyzes your entire Git repository, including uncommitted changes, to provide comprehensive context.
