@@ -1,6 +1,6 @@
 # InsightCoder
 
-**InsightCoder** is a local, AI-powered tool that gives you deep insights into your codebases. By leveraging Large Language Models (LLMs), you can ask complex questions about any Git repository—whether it's code, documentation, or a book—and get intelligent, context-aware answers.
+**InsightCoder** is AI-powered tool that gives you deep insights into your codebases. By leveraging Large Language Models (LLMs), you can ask complex questions about any Git repository—whether it's code, documentation, or a book—and get intelligent, context-aware answers.
 
 It was born out of the need for a powerful codebase analysis tool during the development of the [Anagnorisis project](https://github.com/volotat/Anagnorisis).
 
