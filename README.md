@@ -17,7 +17,6 @@ Project preview
 *   **Large Context Models:** Uses LLMs with large context windows (e.g., Gemini 2.5 Pro) to understand complex projects.
 *   **Interactive Chat UI:** A simple terminal-based UI for asking questions and receiving Markdown-formatted responses with syntax highlighting.
 *   **Real-time Token Counter:** Helps you monitor the context size of your conversation.
-*   **Diff Detection:** Automatically detects `diff` blocks in AI responses, paving the way for future automated code application.
 
 ## InsightCoder vs. GitHub Copilot
 
