@@ -7,11 +7,25 @@ import argparse
 from functools import partial 
 
 # Import your services and original utils
-from app_services import ChatService, TokenCounterService, ConversationService, ContextService, StartupService
-from ask_src.chat_utils import configure_api, start_chat_session
+from src.services import ChatService, TokenCounterService, ConversationService, ContextService, StartupService
+from src.chat_utils import configure_api, start_chat_session
 
-# We will move backend logic to a separate file, e.g., app_services.py
-# For now, we will create placeholders.
+# --- Welcome Message Constant ---
+WELCOME_MESSAGE = """
+# Welcome to InsightCoder
+
+Your AI-powered codebase analysis assistant.
+
+**⚠️ Important Privacy Notice**: This tool sends your project's source code to an external LLM service for analysis. **Do not use this tool on repositories containing personal, confidential, or sensitive information.**
+
+### How to get started:
+
+1.  Ask a question about your codebase in the text box below.
+2.  Use `Shift+Enter` for a new line in the input box.
+3.  Press `Enter` to send your message.
+
+*This message will be replaced by your conversation history once you send your first message.*
+"""
 
 # --- 1. State Management ---
 class AppState:
@@ -19,6 +33,9 @@ class AppState:
     def __init__(self, project_path=".", conversation_path=None):
         self.project_path = project_path
         self.conversation_path = conversation_path
+
+        # Chat settings
+        self.model_name = "gemini-2.5-pro" # Default model
 
         # Backend objects
         self.api_client = None
@@ -40,12 +57,13 @@ class ChatView(ft.ListView):
             spacing=10,
             auto_scroll=True,
         )
+        # Wrap the welcome message to make it selectable
         self.controls = [
-            ft.Markdown(
-                "# Welcome to InsightCoder",
+            ft.SelectionArea(content=ft.Markdown(
+                WELCOME_MESSAGE,
                 extension_set="gitHubWeb",
                 #code_theme="atom-one-dark",
-            )
+            ))
         ]
 
 class InputBar(ft.Row):
@@ -57,7 +75,7 @@ class InputBar(ft.Row):
             multiline=True,
             shift_enter=True,
             on_submit=on_send_message,
-            on_change=on_input_change, # <-- Add this line
+            on_change=on_input_change, 
         )
         self.send_button = ft.IconButton(
             icon=ft.Icons.SEND_ROUNDED,
@@ -96,7 +114,19 @@ class InsightCoderApp:
             on_reload_context=self.reload_context_click,
             on_input_change=self.handle_input_change, 
         )
+        self.model_selector = ft.Dropdown(
+            hint_text="Choose a model",
+            options=[
+                ft.dropdown.Option("gemini-2.5-pro"),
+                ft.dropdown.Option("gemini-2.5-flash"),
+            ],
+            value=self.state.model_name,
+            on_change=self.on_model_change,
+            width=220,
+            tooltip="Select the AI model. Reload context to apply.",
+        )
         self.token_count_label = ft.Text("Tokens: 0", text_align=ft.TextAlign.RIGHT, color=ft.Colors.ON_SURFACE_VARIANT)
+        
 
         self.chat_service = ChatService()
         self.token_service = TokenCounterService()
@@ -111,10 +141,16 @@ class InsightCoderApp:
                 border=ft.border.all(1, ft.Colors.OUTLINE),
                 border_radius=5,
                 padding=10,
-                expand=True,
+                expand=True
             ),
             self.input_bar,
-            self.token_count_label,
+            ft.Row(
+                controls=[
+                    self.model_selector,
+                    self.token_count_label,
+                ],
+                alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
+            ),
         )
         self.page.update()
 
@@ -130,7 +166,7 @@ class InsightCoderApp:
         self.input_bar.reload_button.disabled = True
 
         # Clear welcome message on first message
-        if len(self.chat_view.controls) == 1 and "Welcome" in self.chat_view.controls[0].value:
+        if len(self.chat_view.controls) == 1 and "Welcome" in self.chat_view.controls[0].content.value:
             self.chat_view.controls.clear()
 
         # Display user message
@@ -139,7 +175,8 @@ class InsightCoderApp:
             extension_set="gitHubWeb",
             #code_theme="atom-one-dark"
         )
-        self.chat_view.controls.append(user_message_md)
+        # Wrap in SelectionArea to make it selectable
+        self.chat_view.controls.append(ft.SelectionArea(content=user_message_md))
         self.page.update()
 
         # Display placeholder for model response
@@ -148,8 +185,12 @@ class InsightCoderApp:
             extension_set="gitHubWeb",
             #code_theme="atom-one-dark"
         )
-        self.chat_view.controls.append(model_response_md)
+        # Wrap in SelectionArea to make it selectable
+        self.chat_view.controls.append(ft.SelectionArea(content=model_response_md))
         self.page.update()
+
+        # Yield to the UI thread to render messages before starting the API call
+        await asyncio.sleep(0.01)
 
         # Stream the response
         model_reply_text = ""
@@ -238,22 +279,40 @@ class InsightCoderApp:
         self.input_bar.user_input.focus()
         self.page.update()
 
+    async def on_model_change(self, e):
+        """Handles model selection change."""
+        self.state.model_name = self.model_selector.value
+        print(f"UI: Model selection changed to {self.state.model_name}")
+
+        # Give the user feedback that a reload is required.
+        original_token_text = self.token_count_label.value
+        self.token_count_label.value = "Model changed. Reload context to apply."
+        self.page.update()
+
+        await asyncio.sleep(3)
+        # Revert the label only if no other process is running
+        if not self.state.is_processing:
+            self.token_count_label.value = original_token_text
+        self.page.update()
+
+
 
 async def main(page: ft.Page, project_path: str, conversation_path: str or None):
+    # Apply theme for better readability and aesthetics
+    page.theme_mode = ft.ThemeMode.SYSTEM 
+
     state = AppState(project_path=project_path, conversation_path=conversation_path)
 
     if state.conversation_path is None:
         state.conversation_path = os.path.join(state.project_path, "project_info", "conversations")
     os.makedirs(state.conversation_path, exist_ok=True)
 
-    # --- RUN STARTUP TASKS ---
     # First, configure the API client, as it's needed for summarization
     state.api_client = configure_api()
 
     # Run the startup summarization and wait for it to complete
     startup_service = StartupService()
     await startup_service.summarize_startup_conversations_async(state)
-    # --- END STARTUP TASKS ---
 
     # Now, calculate the conversation counter (it will be accurate after startup summaries)
     pattern_md = os.path.join(state.conversation_path, "conversation_*.md")
@@ -274,7 +333,8 @@ async def main(page: ft.Page, project_path: str, conversation_path: str or None)
     _, state.chat_session = start_chat_session(
         state.api_client,
         state.project_path,
-        state.conversation_path
+        state.conversation_path,
+        state.model_name # Pass the selected model
     )
     print("Initialization complete.")
 

@@ -1,0 +1,3 @@
+The user initially requested a changelog entry for recent codebase changes. The AI provided an entry focusing on "Project Structure Refactoring" (removing `ask_src`, consolidating modules into `src`, renaming `flet_ask.py` to `ask.py`). The user then pointed out the omission of "quality of life improvements." The AI corrected this, adding new entries for:
+*   **Added:** Model Selector, Selectable Chat Text, and an Enhanced Welcome Message.
+*   **Fixed:** UI Responsiveness issues during message sending.

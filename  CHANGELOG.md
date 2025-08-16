@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+
+## [v0.2.1] - 2025-08-16
+
+### Added
+- **Model Selector:** Implemented a dropdown menu in the UI, allowing users to choose between `gemini-2.5-pro` and `gemini-2.5-flash` models for their conversation.
+- **Selectable Chat Text:** All chat messages, including the welcome screen, are now selectable, making it easy to copy code snippets and responses.
+- **Enhanced Welcome Message:** The initial welcome screen now includes a more detailed message with a privacy notice and clearer getting-started instructions.
+
+### Changed
+- **Project Structure Refactoring:** Reorganized the project's file structure to improve clarity and maintainability.
+    - The legacy `ask_src` directory has been removed.
+    - All backend modules (`services.py`, `chat_utils.py`) have been consolidated into a new, cleaner `src` directory.
+    - The main application entry point was renamed from `flet_ask.py` to `ask.py`, simplifying the project's root.
+    - All internal imports were updated to reflect the new file paths.
+
+### Fixed
+- **UI Responsiveness:** Resolved an issue where the UI would freeze for a moment when a message was sent. The application now yields to the UI thread to render the user's message before making the blocking API call.
+
 ## [v0.2.0] - 2025-08-16
 
 ### Changed

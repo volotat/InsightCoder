@@ -329,19 +329,14 @@ Don't waste time by shilling the user. Go straight to the point. The user needs 
     return system_prompt
 
 
-def start_chat_session(client, project_path, conversation_path): # Accept client
+def start_chat_session(client, project_path: str, conversation_path: str, model_name: str): # Accept client
     system_prompt = create_system_prompt(project_path, conversation_path) # Pass project_path and conversation_path
 
     # Load a saved conversation from a file (example - not used in current implementation):
     # history = load_conversation(os.path.join(conversation_path, "conversation_2.md")) # Example of loading specific conversation
 
     chat = client.chats.create(
-        #model="gemini-2.5-pro-preview-05-06",
-        #model="gemini-2.5-pro-exp-03-25",
-        #model="gemini-2.5-flash-preview-04-17", # Using the specified flash model
-        #model="gemini-2.5-flash-preview-05-20",
-        #model="gemini-2.5-flash",
-        model="gemini-2.5-pro",
+        model=model_name,
         config=types.GenerateContentConfig(
             system_instruction=system_prompt,
             temperature=1,
