@@ -1,0 +1,174 @@
+{
+  "name": "insightcoder",
+  "displayName": "InsightCoder",
+  "description": "AI-powered whole-codebase chat: ask questions about your project with full repo context.",
+  "version": "0.3.0",
+  "publisher": "alexey-borsky",
+  "license": "MIT",
+  "icon": "media/icon.png",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/AlexeyBorsky/InsightCoder"
+  },
+  "engines": {
+    "vscode": "^1.90.0"
+  },
+  "categories": [
+    "AI",
+    "Chat"
+  ],
+  "main": "./dist/extension.js",
+  "activationEvents": [],
+  "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "insightcoder",
+          "title": "InsightCoder",
+          "icon": "media/icon.svg"
+        }
+      ]
+    },
+    "views": {
+      "insightcoder": [
+        {
+          "type": "webview",
+          "id": "insightcoder.chatView",
+          "name": "Chat"
+        }
+      ]
+    },
+    "commands": [
+      {
+        "command": "insightcoder.openChat",
+        "title": "InsightCoder: Open Chat"
+      },
+      {
+        "command": "insightcoder.reloadContext",
+        "title": "InsightCoder: Reload Project Context"
+      },
+      {
+        "command": "insightcoder.newConversation",
+        "title": "InsightCoder: New Conversation"
+      },
+      {
+        "command": "insightcoder.setApiKey",
+        "title": "InsightCoder: Set API Key…"
+      },
+      {
+        "command": "insightcoder.exportConversation",
+        "title": "InsightCoder: Export Conversation as Markdown"
+      },
+      {
+        "command": "insightcoder.showContext",
+        "title": "InsightCoder: Show Assembled Context"
+      }
+    ],
+    "configuration": {
+      "title": "InsightCoder",
+      "properties": {
+        "insightcoder.provider": {
+          "type": "string",
+          "enum": [
+            "minimax",
+            "gemini",
+            "openai-compatible"
+          ],
+          "default": "minimax",
+          "description": "LLM provider. 'minimax' and 'openai-compatible' both use an OpenAI-compatible HTTP API with the configured base URL."
+        },
+        "insightcoder.model": {
+          "type": "string",
+          "default": "MiniMax-M3",
+          "description": "Model name sent to the provider (e.g. MiniMax-M3, gemini-flash-latest)."
+        },
+        "insightcoder.baseUrl": {
+          "type": "string",
+          "default": "https://api.minimax.io/v1",
+          "description": "Base URL for OpenAI-compatible endpoints. Ignored for the Gemini provider."
+        },
+        "insightcoder.context.include": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [
+            "**/*"
+          ],
+          "description": "Glob patterns for files to include in the project context."
+        },
+        "insightcoder.context.exclude": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [
+            "**/node_modules/**",
+            "**/.venv/**",
+            "**/venv/**",
+            "**/dist/**",
+            "**/build/**",
+            "**/out/**",
+            "**/*.min.*",
+            "**/package-lock.json",
+            "**/old_code/**"
+          ],
+          "description": "Glob patterns for files to exclude from the project context (in addition to .gitignore)."
+        },
+        "insightcoder.context.maxTokens": {
+          "type": "number",
+          "default": 500000,
+          "description": "Warn and require confirmation when the estimated context size exceeds this many tokens."
+        },
+        "insightcoder.context.maxFileSizeKb": {
+          "type": "number",
+          "default": 256,
+          "description": "Files larger than this are skipped from the context."
+        },
+        "insightcoder.generation.temperature": {
+          "type": "number",
+          "default": 1.0,
+          "description": "Sampling temperature for chat responses."
+        },
+        "insightcoder.generation.maxOutputTokens": {
+          "type": "number",
+          "default": 65536,
+          "description": "Maximum output tokens per response."
+        },
+        "insightcoder.summaries.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Generate a conversation summary after each turn (used as long-term memory in future chats)."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "build": "node esbuild.mjs",
+    "watch": "node esbuild.mjs --watch",
+    "compile": "tsc --noEmit -p . && tsc --noEmit -p webview-ui",
+    "test": "vitest run",
+    "test:live": "node --import tsx scripts/liveProviderTest.ts",
+    "vscode:prepublish": "node esbuild.mjs --production",
+    "package": "vsce package"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.0",
+    "@types/vscode": "^1.90.0",
+    "@vscode/vsce": "^3.2.1",
+    "esbuild": "^0.24.2",
+    "tsx": "^4.19.0",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8"
+  },
+  "dependencies": {
+    "@google/genai": "^1.16.0",
+    "@preact/signals": "^1.3.1",
+    "dompurify": "^3.2.3",
+    "highlight.js": "^11.11.1",
+    "ignore": "^6.0.2",
+    "marked": "^15.0.4",
+    "openai": "^4.77.0",
+    "preact": "^10.25.4"
+  }
+}

@@ -162,3 +162,7 @@ cython_debug/
 full_context.txt
 
 old_code/
+# Node / extension build
+node_modules/
+dist/
+*.vsix

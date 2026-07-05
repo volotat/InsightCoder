@@ -1,0 +1,17 @@
+.vscode/**
+.github/**
+.venv/**
+.env
+src/**
+webview-ui/**
+scripts/**
+old_code/**
+node_modules/**
+esbuild.mjs
+tsconfig.json
+vitest.config.ts
+.gitignore
+ROADMAP.md
+CHANGELOG.md
+media/preview.png
+**/*.map
