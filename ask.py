@@ -141,7 +141,14 @@ class InsightCoderApp:
                 border=ft.border.all(1, ft.Colors.OUTLINE),
                 border_radius=5,
                 padding=10,
-                expand=True
+                expand=True,
+                theme=ft.Theme(
+                    text_theme=ft.TextTheme(
+                        body_medium=ft.TextStyle(size=16),      # Regular text
+                        body_large=ft.TextStyle(size=18),       # Larger text like headers
+                        title_medium=ft.TextStyle(size=20),     # Titles
+                    )
+                )
             ),
             self.input_bar,
             ft.Row(
@@ -299,8 +306,8 @@ class InsightCoderApp:
 
 async def main(page: ft.Page, project_path: str, conversation_path: str or None):
     # Apply theme for better readability and aesthetics
-    page.theme_mode = ft.ThemeMode.SYSTEM 
-
+    # page.theme_mode = ft.ThemeMode.LIGHT
+ 
     state = AppState(project_path=project_path, conversation_path=conversation_path)
 
     if state.conversation_path is None:

@@ -8,7 +8,7 @@ It was born out of the need for a powerful codebase analysis tool during the dev
 
 <!-- Screenshot of the program -->
 ![Screenshot](media/preview.png)  
-Project preview
+Project preview 
 
 ## Core Features
 
