@@ -2,7 +2,7 @@
   "name": "insightcoder",
   "displayName": "InsightCoder",
   "description": "AI-powered whole-codebase chat: ask questions about your project with full repo context.",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "publisher": "alexey-borsky",
   "license": "MIT",
   "icon": "media/icon.png",

@@ -191,6 +191,7 @@ export class ConversationStore {
     await fs.writeFile(this.summaryPath(id), text, "utf-8");
   }
 
+  /** Human-readable transcript. Uses content only — reasoning traces are never included. */
   renderMarkdown(conv: Conversation): string {
     return conv.turns
       .map((t) => `**${t.role === "user" ? "User" : "Model"}:**\n\n${t.content}`)

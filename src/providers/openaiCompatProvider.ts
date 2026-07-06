@@ -1,4 +1,5 @@
 import OpenAI from "openai";
+import { stripThinkTags, ThinkTagSplitter } from "./thinkTagSplitter";
 import type {
   ChatMessage,
   ChatRequest,
@@ -53,6 +54,7 @@ export class OpenAICompatProvider implements LLMProvider {
         { signal: req.signal }
       );
       let usage: { inputTokens: number; outputTokens: number } | undefined;
+      const splitter = new ThinkTagSplitter();
       for await (const chunk of stream) {
         if (chunk.usage) {
           usage = {
@@ -63,15 +65,22 @@ export class OpenAICompatProvider implements LLMProvider {
         const delta = chunk.choices?.[0]?.delta as
           | { content?: string | null; reasoning_content?: string; reasoning?: string }
           | undefined;
-        // MiniMax exposes reasoning as `reasoning_content`; OpenRouter-style
-        // endpoints use `reasoning`.
+        // Some endpoints expose reasoning in a dedicated field (`reasoning_content`
+        // on MiniMax's newer API, `reasoning` on OpenRouter-style proxies)…
         const thinking = delta?.reasoning_content ?? delta?.reasoning;
         if (thinking) {
           yield { type: "thinking", text: thinking };
         }
+        // …while others (MiniMax M-series) inline it in the content as
+        // <think>…</think>; the splitter separates that out.
         if (delta?.content) {
-          yield { type: "text", text: delta.content };
+          for (const event of splitter.push(delta.content)) {
+            yield event;
+          }
         }
+      }
+      for (const event of splitter.flush()) {
+        yield event;
       }
       yield { type: "done", usage };
     } catch (e) {
@@ -124,6 +133,7 @@ export class OpenAICompatProvider implements LLMProvider {
       max_tokens: opts.maxOutputTokens,
       messages: [{ role: "user", content: prompt }],
     });
-    return res.choices[0]?.message?.content?.trim() ?? "";
+    // Strip any inline <think> reasoning so it never lands in summaries.
+    return stripThinkTags(res.choices[0]?.message?.content ?? "");
   }
 }

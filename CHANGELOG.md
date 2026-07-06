@@ -6,6 +6,22 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
+## [v0.3.1] - 2026-07-06
+
+### Added
+- **Reasoning traces.** When a model exposes its thinking, it is shown in a collapsible block that is hidden by default. While the model is thinking, an animated indicator makes the process clearly visible and a continuously updating count shows how many tokens are being spent on reasoning; the completed trace stays available to expand. Supports Gemini thoughts and MiniMax M-series inline `<think>…</think>` reasoning.
+- **Resend unanswered messages.** If a message fails to reach the model (network error, missing API key, etc.), the unanswered message can be resent with one click instead of being retyped.
+- **Context visibility in the Explorer.** Files included in the current model context are marked with a check badge; files that were scanned but skipped get a minus badge with the reason. Unmarked files are not part of the context.
+- **Open the full assembled context** in an editor tab from a toolbar button in the chat panel (in addition to the existing `InsightCoder: Show Assembled Context` command).
+- **Upfront input token count.** The panel shows how many input tokens the next message will cost before anything is sent (exact on Gemini, estimated on MiniMax), updating live as you type and after each turn.
+
+### Changed
+- **Default Gemini models updated** to `gemini-3.5-flash` and `gemini-3.5-pro`.
+- **Summaries exclude reasoning traces** — thinking is stripped from generated summaries so it is never stored as long-term memory.
+
+### Fixed
+- MiniMax M-series reasoning was rendered as plain answer text with no way to hide it; its inline `<think>…</think>` reasoning is now parsed out of the response stream (handling tags split across chunks) and routed to the collapsible thinking block.
+
 ## [v0.3.0] - 2026-07-06
 
 ### Changed
