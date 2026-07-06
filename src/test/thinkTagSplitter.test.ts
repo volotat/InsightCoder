@@ -20,6 +20,23 @@ function joined(events: StreamEvent[], type: "thinking" | "text"): string {
     .join("");
 }
 
+/** Model the consumer: apply `reclassify` by moving answer-so-far into thinking. */
+function consume(events: StreamEvent[]): { thinking: string; answer: string } {
+  let thinking = "";
+  let answer = "";
+  for (const e of events) {
+    if (e.type === "thinking") {
+      thinking += e.text;
+    } else if (e.type === "text") {
+      answer += e.text;
+    } else if (e.type === "reclassify") {
+      thinking = answer + thinking;
+      answer = "";
+    }
+  }
+  return { thinking, answer };
+}
+
 describe("ThinkTagSplitter", () => {
   it("separates a single <think> block from the answer", () => {
     const events = run(["<think>reasoning here</think>the answer"]);
@@ -66,6 +83,34 @@ describe("ThinkTagSplitter", () => {
     const events = run(["<think>still going"]);
     expect(joined(events, "thinking")).toBe("still going");
     expect(joined(events, "text")).toBe("");
+  });
+
+  it("handles auto-prefixed reasoning (closing tag, no opening tag)", () => {
+    // Continuation turns where the chat template prefilled <think>.
+    const { thinking, answer } = consume(
+      run(["reasoning line 1\n", "reasoning line 2</think>\n\nThe answer."])
+    );
+    expect(thinking).toBe("reasoning line 1\nreasoning line 2");
+    expect(answer).toBe("\n\nThe answer.");
+  });
+
+  it("reclassifies across chunk boundaries with a split closing tag", () => {
+    const { thinking, answer } = consume(run(["deep thought</thi", "nk>done"]));
+    expect(thinking).toBe("deep thought");
+    expect(answer).toBe("done");
+  });
+
+  it("does not reclassify a normal answer that has no tags", () => {
+    const events = run(["a plain multi-chunk ", "answer with no reasoning"]);
+    expect(events.some((e) => e.type === "reclassify")).toBe(false);
+    expect(joined(events, "text")).toBe("a plain multi-chunk answer with no reasoning");
+  });
+
+  it("treats a later bare closing tag as literal text once a block was already opened", () => {
+    // After a proper <think>…</think>, a stray </think> in the answer stays text.
+    const { thinking, answer } = consume(run(["<think>r</think>ans </think> more"]));
+    expect(thinking).toBe("r");
+    expect(answer).toBe("ans </think> more");
   });
 });
 

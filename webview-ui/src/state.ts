@@ -78,6 +78,12 @@ export function handleHostMessage(msg: HostToWebview): void {
     case "thinkingTokens":
       streamingThinkingTokens.value = msg.count;
       break;
+    case "reclassifyThinking":
+      // The answer streamed so far was actually reasoning — move it.
+      streamingThinking.value = streamingText.value + streamingThinking.value;
+      streamingText.value = "";
+      thinkingActive.value = true;
+      break;
     case "streamChunk":
       // Answer text has begun — reasoning is complete.
       thinkingActive.value = false;

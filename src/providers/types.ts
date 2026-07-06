@@ -30,6 +30,8 @@ export interface Usage {
 export type StreamEvent =
   | { type: "text"; text: string }
   | { type: "thinking"; text: string }
+  /** Answer text streamed so far was actually reasoning (auto-prefixed <think>). */
+  | { type: "reclassify" }
   | { type: "done"; usage?: Usage }
   | { type: "error"; message: string; retryable: boolean };
 

@@ -259,6 +259,22 @@ export class ChatController {
           if (Date.now() - lastFlush >= CHUNK_FLUSH_MS) {
             flushThinking();
           }
+        } else if (event.type === "reclassify") {
+          // The model auto-prefixed <think>: the answer streamed so far was
+          // actually reasoning. Move it into the thinking trace on both sides.
+          const tail = pending;
+          thinkingFull = full;
+          full = "";
+          pending = "";
+          this.sink({ type: "reclassifyThinking" });
+          if (tail) {
+            this.sink({ type: "thinkingChunk", text: tail });
+          }
+          this.sink({
+            type: "thinkingTokens",
+            count: this.tokens.estimate(thinkingFull.length),
+            exact: false,
+          });
         } else if (event.type === "text") {
           // Answer started — make sure any buffered thinking is flushed first.
           flushThinking();

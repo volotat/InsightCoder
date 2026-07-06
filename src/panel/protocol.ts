@@ -81,6 +81,8 @@ export type HostToWebview =
   | { type: "streamStart" }
   | { type: "thinkingChunk"; text: string }
   | { type: "thinkingTokens"; count: number; exact: boolean }
+  /** Move the answer text streamed so far into the reasoning trace. */
+  | { type: "reclassifyThinking" }
   | { type: "streamChunk"; text: string }
   | {
       type: "streamEnd";

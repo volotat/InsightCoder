@@ -21,6 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - MiniMax M-series reasoning was rendered as plain answer text with no way to hide it; its inline `<think>…</think>` reasoning is now parsed out of the response stream (handling tags split across chunks) and routed to the collapsible thinking block.
+- Reasoning no longer disappeared on follow-up turns: continuation responses whose chat template auto-prefills the opening `<think>` (so only a closing `</think>` is streamed) are now detected and routed to the thinking block instead of leaking into the answer.
 
 ## [v0.3.0] - 2026-07-06
 
