@@ -164,3 +164,27 @@ export function largestFiles(
     .slice(0, n)
     .map((f) => ({ path: f.relPath, kb: Math.round(f.content.length / 1024) }));
 }
+
+export interface ContextFileStat {
+  relPath: string;
+  chars: number;
+  estTokens: number;
+  /** This file's share (%) of all included files' content — for the exclusion decision. */
+  pct: number;
+}
+
+/** Every included file ranked largest-first, with size / estimated-token / share stats. */
+export function contextBreakdown(ctx: ProjectContext): ContextFileStat[] {
+  const totalChars = ctx.files.reduce((sum, f) => sum + f.content.length, 0);
+  return [...ctx.files]
+    .sort((a, b) => b.content.length - a.content.length)
+    .map((f) => {
+      const chars = f.content.length;
+      return {
+        relPath: f.relPath,
+        chars,
+        estTokens: estimateTokens(f.content),
+        pct: totalChars > 0 ? Math.round((chars / totalChars) * 100) : 0,
+      };
+    });
+}

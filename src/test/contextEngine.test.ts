@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { ContextEngine, largestFiles } from "../core/contextEngine";
+import {
+  ContextEngine,
+  contextBreakdown,
+  largestFiles,
+  type ProjectContext,
+} from "../core/contextEngine";
 import { fakeGit, fakeRepo, fakeSettings } from "./helpers";
 
 describe("ContextEngine", () => {
@@ -89,5 +94,31 @@ describe("ContextEngine", () => {
     const ctx = await engine.buildContext("");
     const top = largestFiles(ctx, 1);
     expect(top).toEqual([{ path: "large.ts", kb: 10 }]);
+  });
+});
+
+describe("contextBreakdown", () => {
+  function ctxOf(files: Record<string, string>): ProjectContext {
+    return {
+      files: Object.entries(files).map(([relPath, content]) => ({ relPath, content })),
+      gitDiff: "",
+      summaries: "",
+      estimatedTokens: 0,
+      skipped: [],
+    };
+  }
+
+  it("ranks files largest-first with token estimates and percentage shares", () => {
+    const stats = contextBreakdown(
+      ctxOf({ "small.ts": "a".repeat(100), "big.ts": "b".repeat(300) })
+    );
+    expect(stats.map((s) => s.relPath)).toEqual(["big.ts", "small.ts"]);
+    expect(stats[0]).toMatchObject({ chars: 300, estTokens: 75, pct: 75 });
+    expect(stats[1]).toMatchObject({ chars: 100, estTokens: 25, pct: 25 });
+    expect(stats.reduce((sum, s) => sum + s.pct, 0)).toBe(100);
+  });
+
+  it("returns an empty list for an empty context", () => {
+    expect(contextBreakdown(ctxOf({}))).toEqual([]);
   });
 });

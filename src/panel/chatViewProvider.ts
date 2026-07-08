@@ -129,6 +129,9 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       case "showContext":
         await vscode.commands.executeCommand("insightcoder.showContext");
         break;
+      case "inspectContext":
+        await vscode.commands.executeCommand("insightcoder.inspectContext");
+        break;
       case "resendLast":
         await this.controller.resendLast();
         await this.sendConversationList();

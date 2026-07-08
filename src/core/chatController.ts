@@ -2,7 +2,13 @@ import type { SettingsReader } from "../config/settings";
 import type { ChatMessage } from "../providers/types";
 import { MissingApiKeyError, ProviderRegistry } from "../providers/providerRegistry";
 import type { HostToWebview, TurnState } from "../panel/protocol";
-import { ContextEngine, largestFiles, type ProjectContext } from "./contextEngine";
+import {
+  ContextEngine,
+  contextBreakdown,
+  largestFiles,
+  type ContextFileStat,
+  type ProjectContext,
+} from "./contextEngine";
 import { ConversationStore } from "./conversationStore";
 import { buildSystemPrompt } from "./promptBuilder";
 import { Summarizer } from "./summarizer";
@@ -49,6 +55,11 @@ export class ChatController {
 
   getSystemPrompt(): string | undefined {
     return this.systemPrompt;
+  }
+
+  /** Per-file context size breakdown (largest first); empty until the context is built. */
+  getContextBreakdown(): ContextFileStat[] {
+    return this.context ? contextBreakdown(this.context) : [];
   }
 
   getContextInfo(): HostToWebview | undefined {

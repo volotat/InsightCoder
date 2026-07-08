@@ -56,6 +56,12 @@ export function Toolbar() {
       >
         ⧉
       </button>
+      <button
+        title="Inspect context files by size and exclude large ones"
+        onClick={() => post({ type: "inspectContext" })}
+      >
+        📊
+      </button>
       <div class="toolbar-spacer" />
       <span
         class="status-line"

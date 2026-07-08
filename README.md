@@ -26,6 +26,8 @@ The extension scans the open workspace (respecting `.gitignore` and your include
 
 The context is fully inspectable: once it is built, files included in it are marked with a check badge in the Explorer (skipped files get a minus badge with the reason), and a toolbar button in the chat panel — also available as the `InsightCoder: Show Assembled Context` command — opens the exact text that will be sent to the model in an editor tab. The panel also shows the number of input tokens the next message will cost before you send anything (exact on Gemini, estimated on MiniMax), updating live as you type.
 
+To keep the context lean, the `InsightCoder: Inspect Context Files` command (also a toolbar button, and offered on the "context too large" warning) lists every file in the context sorted largest-first, with its size, estimated tokens, and share of the total. Select the files you don't need and they are added to the exclude list for the project and dropped from the context immediately — an easy way to keep large generated files, fixtures, or vendored blobs out of the payload.
+
 For models that expose their reasoning, the trace is shown as a collapsible block that is hidden by default. While the model is thinking, the block displays a clear animated indicator with a continuously updating count of tokens spent on reasoning; the completed trace remains available to expand afterwards. If a message fails to reach the model — a network error or a missing API key, for example — the unanswered message can be resent with one click rather than retyped.
 
 Conversations are stored in the extension's own storage, never inside your repository. Each project has its own set of conversations, switchable from the panel, and each conversation is summarized after every turn so future chats retain long-term memory of what was discussed.
@@ -40,14 +42,14 @@ Two providers are supported: MiniMax (or any OpenAI-compatible endpoint, configu
 4. Run `InsightCoder: Set API Key…` from the Command Palette and paste your MiniMax or Gemini key.
 5. Ask a question.
 
-All commands are available from the Command Palette under the `InsightCoder:` prefix: open the chat, set an API key, reload the project context after large edits, start a new conversation, export the current conversation as Markdown, and show the exact assembled context for debugging.
+All commands are available from the Command Palette under the `InsightCoder:` prefix: open the chat, set an API key, reload the project context after large edits, start a new conversation, export the current conversation as Markdown, inspect context files by size, and show the exact assembled context for debugging.
 
 Behavior is controlled through the `insightcoder.*` settings: provider and model selection, endpoint base URL, context include/exclude globs, the context-size confirmation threshold (`context.maxTokens`, default 500,000), per-file size cap, generation parameters, and whether conversation summaries are generated.
 
 ## Running from source
 
 ```bash
-git clone https://github.com/AlexeyBorsky/InsightCoder.git
+git clone https://github.com/volotat/InsightCoder.git
 cd InsightCoder
 npm install
 npm run build

@@ -1,0 +1,59 @@
+name: Publish Extension
+
+# Publishes to the VS Code Marketplace when a version tag (e.g. v0.3.2) is pushed.
+# Release flow:
+#   1. bump "version" in package.json and add a CHANGELOG entry
+#   2. git commit, then: git tag v0.3.2 && git push origin main --tags
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      # Guard against a tag that doesn't match the manifest version.
+      - name: Verify tag matches package.json version
+        run: |
+          TAG="${GITHUB_REF_NAME#v}"
+          PKG="$(node -p "require('./package.json').version")"
+          if [ "$TAG" != "$PKG" ]; then
+            echo "::error::Tag v$TAG does not match package.json version $PKG"
+            exit 1
+          fi
+
+      # Quality gates — a failure here blocks the publish.
+      - run: npm run compile
+      - run: npm test
+
+      # Build the .vsix once (runs the vscode:prepublish bundle), keep it as an
+      # artifact, then publish that exact file.
+      - name: Package
+        run: npx vsce package -o "insightcoder-${GITHUB_REF_NAME}.vsix"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: vsix
+          path: "*.vsix"
+
+      - name: Publish to VS Code Marketplace
+        run: npx vsce publish --packagePath "insightcoder-${GITHUB_REF_NAME}.vsix"
+        env:
+          VSCE_PAT: ${{ secrets.VSCE_PAT }}
+
+      # Optional: also publish to Open VSX (VSCodium / Cursor / Windsurf users).
+      # Requires an OVSX_PAT secret from https://open-vsx.org. Uncomment to enable.
+      # - name: Publish to Open VSX
+      #   run: npx ovsx publish "insightcoder-${GITHUB_REF_NAME}.vsix" -p "$OVSX_PAT"
+      #   env:
+      #     OVSX_PAT: ${{ secrets.OVSX_PAT }}

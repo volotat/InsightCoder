@@ -2,13 +2,13 @@
   "name": "insightcoder",
   "displayName": "InsightCoder",
   "description": "AI-powered whole-codebase chat: ask questions about your project with full repo context.",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "publisher": "alexey-borsky",
   "license": "MIT",
   "icon": "media/icon.png",
   "repository": {
     "type": "git",
-    "url": "https://github.com/AlexeyBorsky/InsightCoder"
+    "url": "https://github.com/volotat/InsightCoder"
   },
   "engines": {
     "vscode": "^1.90.0"
@@ -62,6 +62,10 @@
       {
         "command": "insightcoder.showContext",
         "title": "InsightCoder: Show Assembled Context"
+      },
+      {
+        "command": "insightcoder.inspectContext",
+        "title": "InsightCoder: Inspect Context Files"
       }
     ],
     "configuration": {

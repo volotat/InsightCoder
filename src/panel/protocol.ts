@@ -61,6 +61,7 @@ export type WebviewToHost =
   | { type: "setApiKey" }
   | { type: "exportConversation" }
   | { type: "showContext" }
+  | { type: "inspectContext" }
   | { type: "resendLast" };
 
 /** Messages sent from the extension host to the webview. */

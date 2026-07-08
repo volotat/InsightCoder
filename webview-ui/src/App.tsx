@@ -44,6 +44,7 @@ function LargeContextBanner() {
         <button onClick={() => post({ type: "confirmLargeContext", accept: true })}>
           Send anyway
         </button>
+        <button onClick={() => post({ type: "inspectContext" })}>Manage large files…</button>
         <button class="danger" onClick={() => post({ type: "confirmLargeContext", accept: false })}>
           Cancel
         </button>

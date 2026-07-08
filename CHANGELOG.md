@@ -6,6 +6,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
+## [v0.3.2] - 2026-07-08
+
+### Added
+- **Context inspector.** A new `InsightCoder: Inspect Context Files` command opens a searchable, multi-select list of every file in the current model context, sorted largest-first and annotated with size (KB), estimated tokens, and each file's share (%) of the context. Ticking files and confirming excludes them, their paths are appended to `insightcoder.context.exclude` in the workspace settings and the context is rebuilt immediately (Explorer badges and the token counter update). Launchable from the Command Palette, a new 📊 button in the chat toolbar, and a "Manage large files…" button on the over-limit warning banner.
+
 ## [v0.3.1] - 2026-07-06
 
 ### Added

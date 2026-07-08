@@ -161,6 +161,52 @@ export function activate(context: vscode.ExtensionContext): void {
       await vscode.window.showTextDocument(doc, { preview: true });
     }),
 
+    vscode.commands.registerCommand("insightcoder.inspectContext", async () => {
+      await controller.ensureContext();
+      const files = controller.getContextBreakdown();
+      if (files.length === 0) {
+        void vscode.window.showInformationMessage(
+          "InsightCoder: no files are currently in the model context."
+        );
+        return;
+      }
+      type Item = vscode.QuickPickItem & { relPath: string };
+      const items: Item[] = files.map((f) => ({
+        label: f.relPath,
+        description: `${Math.round(f.chars / 1024)} KB · ~${f.estTokens.toLocaleString("en-US")} tokens · ${f.pct}%`,
+        relPath: f.relPath,
+      }));
+      const picked = await vscode.window.showQuickPick(items, {
+        canPickMany: true,
+        matchOnDescription: true,
+        title: "InsightCoder — Context files by size",
+        placeHolder: "Select files to exclude from the model context (largest first)",
+      });
+      if (!picked || picked.length === 0) {
+        return;
+      }
+      const cfg = vscode.workspace.getConfiguration("insightcoder");
+      const current = cfg.get<string[]>("context.exclude", []);
+      // A workspace-relative path works as an exclude glob as-is. Paths containing
+      // glob metacharacters (*?[]{}) are a rare edge case and not escaped in v1.
+      const additions = picked.map((p) => p.relPath).filter((p) => !current.includes(p));
+      if (additions.length === 0) {
+        void vscode.window.showInformationMessage(
+          "InsightCoder: the selected file(s) are already excluded."
+        );
+        return;
+      }
+      await cfg.update(
+        "context.exclude",
+        [...current, ...additions],
+        vscode.ConfigurationTarget.Workspace
+      );
+      await controller.reloadContext();
+      void vscode.window.showInformationMessage(
+        `InsightCoder: excluded ${additions.length} file(s) from the context. Edit "insightcoder.context.exclude" in settings to re-include.`
+      );
+    }),
+
     vscode.workspace.onDidChangeConfiguration((e) => {
       if (!e.affectsConfiguration("insightcoder")) {
         return;
