@@ -12,6 +12,12 @@ export interface TurnDTO {
   model?: string;
   thinking?: string;
   thinkingTokens?: number;
+  /** Node id in the conversation tree; absent only on optimistic local turns. */
+  id?: string;
+  /** Position among sibling branches at this point (0-based). */
+  siblingIndex?: number;
+  /** Number of sibling branches at this point; >1 shows the ‹ i/n › switcher. */
+  siblingCount?: number;
 }
 
 export interface ConversationMeta {
@@ -62,7 +68,9 @@ export type WebviewToHost =
   | { type: "exportConversation" }
   | { type: "showContext" }
   | { type: "inspectContext" }
-  | { type: "resendLast" };
+  | { type: "resendLast" }
+  | { type: "editMessage"; id: string; content: string }
+  | { type: "selectSibling"; id: string; index: number };
 
 /** Messages sent from the extension host to the webview. */
 export type HostToWebview =
@@ -96,4 +104,5 @@ export type HostToWebview =
   | { type: "contextInfo"; info: ContextInfo }
   | { type: "apiKeyState"; hasApiKey: boolean }
   | { type: "canResend"; value: boolean }
+  | { type: "modelList"; models: ModelChoice[] }
   | { type: "error"; message: string };

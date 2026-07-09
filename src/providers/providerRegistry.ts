@@ -9,6 +9,18 @@ export interface ActiveModel {
   modelId: string;
 }
 
+export interface ModelChoiceEntry {
+  providerId: string;
+  modelId: string;
+  label: string;
+  contextWindow?: number;
+}
+
+const GEMINI_STATIC: ModelInfo[] = [
+  { id: "gemini-3.5-flash", contextWindow: 1048576 },
+  { id: "gemini-3.5-pro", contextWindow: 1048576 },
+];
+
 const MISSING_KEY = "MISSING_API_KEY";
 
 export class MissingApiKeyError extends Error {
@@ -24,6 +36,7 @@ export class MissingApiKeyError extends Error {
 export class ProviderRegistry {
   private cache = new Map<string, LLMProvider>();
   private active: ActiveModel | undefined;
+  private modelChoicesCache: ModelChoiceEntry[] | undefined;
 
   constructor(
     private readonly settings: SettingsReader,
@@ -32,6 +45,8 @@ export class ProviderRegistry {
 
   invalidate(): void {
     this.cache.clear();
+    // baseUrl / provider / key may have changed — next refresh repopulates.
+    this.modelChoicesCache = undefined;
   }
 
   /** In-session model override from the dropdown; falls back to settings. */
@@ -71,59 +86,76 @@ export class ProviderRegistry {
     return provider;
   }
 
-  /** Model choices for the dropdown, across all providers with a stored key. */
-  async listModelChoices(): Promise<
-    { providerId: string; modelId: string; label: string; contextWindow?: number }[]
-  > {
+  private openAiCompatId(): string {
     const cfg = this.settings.get();
-    const choices: { providerId: string; modelId: string; label: string; contextWindow?: number }[] = [];
+    return cfg.provider === "gemini" ? "minimax" : cfg.provider;
+  }
 
-    const openAiCompatId = cfg.provider === "gemini" ? "minimax" : cfg.provider;
-    const minimaxModels: ModelInfo[] = [{ id: cfg.provider === "gemini" ? "MiniMax-M3" : cfg.model }];
-    if (await this.hasApiKey(openAiCompatId)) {
-      try {
-        const provider = await this.getProvider(openAiCompatId);
-        const listed = await provider.listModels();
-        if (listed.length > 0) {
-          minimaxModels.splice(0, minimaxModels.length, ...listed);
-        }
-      } catch {
-        // keep the static fallback
-      }
-    }
-    for (const m of minimaxModels) {
-      choices.push({
+  private staticMinimaxModels(): ModelInfo[] {
+    const cfg = this.settings.get();
+    return [{ id: cfg.provider === "gemini" ? "MiniMax-M3" : cfg.model }];
+  }
+
+  private static assemble(
+    openAiCompatId: string,
+    minimaxModels: ModelInfo[],
+    geminiModels: ModelInfo[]
+  ): ModelChoiceEntry[] {
+    return [
+      ...minimaxModels.map((m) => ({
         providerId: openAiCompatId,
         modelId: m.id,
         label: `${m.id} (MiniMax)`,
         contextWindow: m.contextWindow,
-      });
-    }
-
-    const geminiStatic: ModelInfo[] = [
-      { id: "gemini-3.5-flash", contextWindow: 1048576 },
-      { id: "gemini-3.5-pro", contextWindow: 1048576 },
-    ];
-    let geminiModels = geminiStatic;
-    if (await this.hasApiKey("gemini")) {
-      try {
-        const provider = await this.getProvider("gemini");
-        const listed = await provider.listModels();
-        if (listed.length > 0) {
-          geminiModels = listed;
-        }
-      } catch {
-        // keep the static fallback
-      }
-    }
-    for (const m of geminiModels) {
-      choices.push({
+      })),
+      ...geminiModels.map((m) => ({
         providerId: "gemini",
         modelId: m.id,
         label: `${m.id} (Gemini)`,
         contextWindow: m.contextWindow,
-      });
+      })),
+    ];
+  }
+
+  /**
+   * Model choices with ZERO network I/O: the last refreshed list if available,
+   * else the static fallbacks. Lets the panel initialize instantly; callers
+   * kick off refreshModelChoices() in the background for the real list.
+   */
+  getCachedModelChoices(): ModelChoiceEntry[] {
+    if (this.modelChoicesCache) {
+      return this.modelChoicesCache;
     }
-    return choices;
+    return ProviderRegistry.assemble(
+      this.openAiCompatId(),
+      this.staticMinimaxModels(),
+      GEMINI_STATIC
+    );
+  }
+
+  /** Query both providers (in parallel) for their model lists and cache the result. */
+  async refreshModelChoices(): Promise<ModelChoiceEntry[]> {
+    const openAiCompatId = this.openAiCompatId();
+
+    const listFor = async (providerId: string, fallback: ModelInfo[]): Promise<ModelInfo[]> => {
+      if (!(await this.hasApiKey(providerId))) {
+        return fallback;
+      }
+      try {
+        const provider = await this.getProvider(providerId);
+        const listed = await provider.listModels();
+        return listed.length > 0 ? listed : fallback;
+      } catch {
+        return fallback;
+      }
+    };
+
+    const [minimaxModels, geminiModels] = await Promise.all([
+      listFor(openAiCompatId, this.staticMinimaxModels()),
+      listFor("gemini", GEMINI_STATIC),
+    ]);
+
+    this.modelChoicesCache = ProviderRegistry.assemble(openAiCompatId, minimaxModels, geminiModels);
+    return this.modelChoicesCache;
   }
 }

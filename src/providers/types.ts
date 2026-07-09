@@ -5,6 +5,12 @@ export type ChatRole = "user" | "assistant";
 export interface ChatMessage {
   role: ChatRole;
   content: string;
+  /**
+   * Reasoning trace of a prior assistant turn. MiniMax M-series interleaved
+   * thinking REQUIRES these to be sent back in history (as <think> blocks) or
+   * the model stops reasoning on follow-up turns; Gemini ignores them.
+   */
+  thinking?: string;
 }
 
 export interface GenerationParams {

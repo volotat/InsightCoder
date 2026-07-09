@@ -153,9 +153,9 @@ export class ChatController {
     this.abort?.abort();
   }
 
-  /** A message is resendable when the last stored turn is a user turn with no answer. */
+  /** A message is resendable when the active branch ends in a user turn with no answer. */
   canResend(): boolean {
-    const turns = this.store.current().turns;
+    const turns = this.store.currentPath();
     return turns.length > 0 && turns[turns.length - 1].role === "user";
   }
 
@@ -196,11 +196,11 @@ export class ChatController {
     if (this.state !== "idle" || !this.canResend()) {
       return;
     }
-    const turns = this.store.current().turns;
+    const turns = this.store.currentPath();
     const text = turns[turns.length - 1].content;
     const history: ChatMessage[] = turns
       .slice(0, -1)
-      .map((t) => ({ role: t.role, content: t.content }));
+      .map((t) => ({ role: t.role, content: t.content, thinking: t.thinking }));
     this.setState("assemblingContext");
     try {
       const ctx = await this.ensureContext();

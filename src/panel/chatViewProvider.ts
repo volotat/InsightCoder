@@ -30,6 +30,8 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     private readonly controller: ChatController,
     private readonly store: ConversationStore,
     private readonly registry: ProviderRegistry,
+    /** Resolves once the ConversationStore has finished initializing. */
+    private readonly storeReady: Promise<void>,
     private readonly log: (msg: string) => void
   ) {}
 
@@ -55,6 +57,10 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
   }
 
   private async handle(msg: WebviewToHost): Promise<void> {
+    // The webview's `ready` can beat the async store initialization on a fresh
+    // activation (F5) — every handler below touches the store or controller,
+    // so gate on init having finished.
+    await this.storeReady;
     switch (msg.type) {
       case "ready":
         await this.sendInit();
@@ -63,11 +69,9 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
         break;
       case "sendMessage":
         await this.controller.sendMessage(msg.text);
-        this.post({
-          type: "conversationList",
-          conversations: await this.store.list(),
-          activeConversationId: this.store.current().id,
-        });
+        // Re-sync with authoritative node ids/sibling info for the new turns.
+        this.postCurrentConversation();
+        await this.sendConversationList();
         break;
       case "cancelStream":
         this.controller.cancel();
@@ -76,16 +80,16 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
         await this.controller.reloadContext();
         break;
       case "newConversation": {
-        const conv = await this.store.startNew();
-        this.post({ type: "conversationLoaded", turns: conv.turns, conversationId: conv.id });
+        await this.store.startNew();
+        this.postCurrentConversation();
         await this.sendConversationList();
         void this.controller.countDraftTokens("");
         this.controller.emitResendState();
         break;
       }
       case "switchConversation": {
-        const conv = await this.store.switchTo(msg.id);
-        this.post({ type: "conversationLoaded", turns: conv.turns, conversationId: conv.id });
+        await this.store.switchTo(msg.id);
+        this.postCurrentConversation();
         await this.sendConversationList();
         void this.controller.countDraftTokens("");
         this.controller.emitResendState();
@@ -101,8 +105,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
           return;
         }
         await this.store.delete(msg.id);
-        const conv = this.store.current();
-        this.post({ type: "conversationLoaded", turns: conv.turns, conversationId: conv.id });
+        this.postCurrentConversation();
         await this.sendConversationList();
         this.controller.emitResendState();
         break;
@@ -134,9 +137,52 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
         break;
       case "resendLast":
         await this.controller.resendLast();
+        this.postCurrentConversation();
         await this.sendConversationList();
         break;
+      case "editMessage": {
+        if (this.controller.getState() !== "idle" || !msg.content.trim()) {
+          return;
+        }
+        const role = await this.store.editAndBranch(msg.id, msg.content);
+        if (!role) {
+          return;
+        }
+        this.postCurrentConversation();
+        await this.sendConversationList();
+        if (role === "user") {
+          // The active branch now ends with the edited user turn — stream a reply.
+          await this.controller.resendLast();
+          this.postCurrentConversation();
+          await this.sendConversationList();
+        } else {
+          this.controller.emitResendState();
+          void this.controller.countDraftTokens("");
+        }
+        break;
+      }
+      case "selectSibling": {
+        if (this.controller.getState() !== "idle") {
+          return;
+        }
+        if (await this.store.selectSibling(msg.id, msg.index)) {
+          this.postCurrentConversation();
+          await this.sendConversationList();
+          this.controller.emitResendState();
+          void this.controller.countDraftTokens("");
+        }
+        break;
+      }
     }
+  }
+
+  /** Push the authoritative active branch (with node ids + sibling info) to the webview. */
+  postCurrentConversation(): void {
+    this.post({
+      type: "conversationLoaded",
+      turns: this.store.currentPathDTO(),
+      conversationId: this.store.current().id,
+    });
   }
 
   async sendConversationList(): Promise<void> {
@@ -153,15 +199,27 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     const contextInfo = this.controller.getContextInfo();
     this.post({
       type: "init",
-      turns: conv.turns,
+      turns: this.store.currentPathDTO(),
       conversations: await this.store.list(),
       activeConversationId: conv.id,
-      models: await this.registry.listModelChoices(),
+      // Cached/static list — zero network, so init is never blocked on HTTP.
+      models: this.registry.getCachedModelChoices(),
       activeModel: { providerId: active.providerId, modelId: active.modelId },
       hasApiKey: await this.registry.hasApiKey(),
       contextInfo: contextInfo?.type === "contextInfo" ? contextInfo.info : undefined,
       canResend: this.controller.canResend(),
     });
+    // Fetch the real model lists in the background; the dropdown updates in place.
+    void this.refreshModels();
+  }
+
+  private async refreshModels(): Promise<void> {
+    try {
+      const models = await this.registry.refreshModelChoices();
+      this.post({ type: "modelList", models });
+    } catch (e) {
+      this.log(`Model list refresh failed: ${e}`);
+    }
   }
 
   private renderHtml(webview: vscode.Webview): string {

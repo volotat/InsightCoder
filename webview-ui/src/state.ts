@@ -1,4 +1,5 @@
 import { signal } from "@preact/signals";
+import { saveUiState } from "./vscodeApi";
 import type {
   ContextInfo,
   ConversationMeta,
@@ -41,6 +42,11 @@ function resetStreaming(): void {
   thinkingActive.value = false;
 }
 
+/** Persist the visible chat so a reloaded webview repaints without waiting for init. */
+function snapshot(): void {
+  saveUiState({ turns: turns.value, activeConversationId: activeConversationId.value });
+}
+
 export function handleHostMessage(msg: HostToWebview): void {
   switch (msg.type) {
     case "init":
@@ -55,6 +61,7 @@ export function handleHostMessage(msg: HostToWebview): void {
         contextInfo.value = msg.contextInfo;
       }
       initialized.value = true;
+      snapshot();
       break;
     case "conversationList":
       conversations.value = msg.conversations;
@@ -65,6 +72,7 @@ export function handleHostMessage(msg: HostToWebview): void {
       activeConversationId.value = msg.conversationId;
       resetStreaming();
       showTabs.value = false;
+      snapshot();
       break;
     case "streamStart":
       errorMessage.value = null;
@@ -104,6 +112,7 @@ export function handleHostMessage(msg: HostToWebview): void {
         ];
       }
       resetStreaming();
+      snapshot();
       break;
     case "tokenCount":
       tokenCount.value = { total: msg.total, exact: msg.exact };
@@ -120,8 +129,18 @@ export function handleHostMessage(msg: HostToWebview): void {
     case "canResend":
       canResend.value = msg.value;
       break;
+    case "modelList":
+      models.value = msg.models;
+      break;
     case "error":
       errorMessage.value = msg.message;
       break;
   }
+}
+
+/** Repaint the last-known chat immediately from the persisted snapshot (cold load). */
+export function hydrateFromSnapshot(s: { turns: TurnDTO[]; activeConversationId: number }): void {
+  turns.value = s.turns;
+  activeConversationId.value = s.activeConversationId;
+  initialized.value = true;
 }

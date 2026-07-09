@@ -17,7 +17,7 @@ export class Summarizer {
 
   /** Fire-and-forget after each turn; failures are logged, never surfaced as errors. */
   async summarize(conv: Conversation): Promise<void> {
-    if (!this.settings.get().summariesEnabled || conv.turns.length === 0) {
+    if (!this.settings.get().summariesEnabled || conv.nodes.length === 0) {
       return;
     }
     try {

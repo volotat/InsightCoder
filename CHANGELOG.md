@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v0.3.3] - 2026-07-09
+
+### Added
+- **Message editing with conversation branches.** Any message can be edited via a pencil button that appears on hover. Editing a user message creates a new branch and immediately resends it; editing a model response creates a branch with the corrected text. The original branch is always preserved — a ChatGPT-style ‹ 2/2 › switcher appears on messages that have alternative versions, and switching restores that branch's own downstream conversation. Conversations are now stored as trees (existing linear conversations are migrated automatically), and only the active branch is sent to the model, summarized, and exported.
+
+### Changed
+- **Toolbar split into two lines.** The file count and input-token readout moved to their own row below the model selector and action buttons, so the information stays readable in a narrow sidebar. The model dropdown now stretches to fill the freed space.
+
+### Fixed
+- **MiniMax stopped thinking on follow-up questions.** MiniMax M-series interleaved thinking requires assistant turns in the conversation history to be sent back with their `<think>` reasoning blocks; the extension was stripping them (correct for other providers), which caused reasoning to degrade and disappear after the first turn. Stored thinking traces are now restored into history for the MiniMax/OpenAI-compatible provider only (Gemini still receives clean history), and the token estimate accounts for the replayed reasoning.
+- **"ConversationStore not initialized" on startup.** The webview's ready signal could win the race against the asynchronous conversation-store initialization on a fresh activation, surfacing an error banner and preventing the context (and the file/token readout) from loading. Webview messages now wait for store initialization to complete.
+- **Panel restore is now instant.** Switching away from the InsightCoder tab and back previously took several seconds: VS Code destroyed the hidden webview, and re-initialization blocked on two sequential network calls fetching provider model lists. The webview is now retained while hidden, initialization uses a cached/static model list with zero network I/O (the dropdown refreshes in the background, with both providers queried in parallel), and the last conversation is snapshotted so even a genuinely reloaded webview (window restart) repaints immediately.
 
 ## [v0.3.2] - 2026-07-08
 

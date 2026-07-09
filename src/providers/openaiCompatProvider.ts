@@ -14,6 +14,27 @@ function isRetryable(e: unknown): boolean {
   return status === 429 || (typeof status === "number" && status >= 500);
 }
 
+/**
+ * MiniMax M-series uses interleaved thinking: assistant turns in history MUST
+ * be sent back with their reasoning restored as <think> blocks, or the model
+ * stops emitting reasoning (and degrades) on follow-up turns.
+ */
+export function toWireMessages(
+  systemPrompt: string,
+  messages: ChatMessage[]
+): { role: "system" | "user" | "assistant"; content: string }[] {
+  return [
+    { role: "system" as const, content: systemPrompt },
+    ...messages.map((m) => ({
+      role: m.role,
+      content:
+        m.role === "assistant" && m.thinking
+          ? `<think>${m.thinking}</think>\n\n${m.content}`
+          : m.content,
+    })),
+  ];
+}
+
 function errorMessage(e: unknown): string {
   if (e instanceof Error) {
     return e.message;
@@ -46,10 +67,7 @@ export class OpenAICompatProvider implements LLMProvider {
           stream_options: { include_usage: true },
           temperature: req.generation.temperature,
           max_tokens: req.generation.maxOutputTokens,
-          messages: [
-            { role: "system", content: req.systemPrompt },
-            ...req.messages.map((m) => ({ role: m.role, content: m.content })),
-          ],
+          messages: toWireMessages(req.systemPrompt, req.messages),
         },
         { signal: req.signal }
       );
@@ -105,7 +123,8 @@ export class OpenAICompatProvider implements LLMProvider {
   ): Promise<TokenCount> {
     const chars =
       systemPrompt.length +
-      messages.reduce((s, m) => s + m.content.length, 0) +
+      // Thinking is replayed in history on this provider, so count it too.
+      messages.reduce((s, m) => s + m.content.length + (m.thinking?.length ?? 0), 0) +
       (draft?.length ?? 0);
     return { total: Math.ceil(chars / 4), exact: false };
   }

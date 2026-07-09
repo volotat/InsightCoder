@@ -28,24 +28,27 @@ body {
 /* ---------- toolbar ---------- */
 .toolbar {
   display: flex;
-  align-items: center;
+  flex-direction: column;
   gap: 4px;
   padding: 6px 8px;
   border-bottom: 1px solid var(--vscode-panel-border, rgba(128, 128, 128, 0.25));
   flex-shrink: 0;
 }
 
+.toolbar-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
 .toolbar select {
-  max-width: 45%;
+  flex: 1;
+  min-width: 0;
   background: var(--vscode-dropdown-background);
   color: var(--vscode-dropdown-foreground);
   border: 1px solid var(--vscode-dropdown-border, transparent);
   border-radius: 3px;
   padding: 2px 4px;
-}
-
-.toolbar-spacer {
-  flex: 1;
 }
 
 .status-line {
@@ -219,12 +222,96 @@ button.danger {
   background: transparent;
 }
 
+.message-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+  min-height: 20px;
+}
+
 .message-role {
   font-size: 0.75em;
   font-weight: bold;
   opacity: 0.6;
-  margin-bottom: 4px;
   text-transform: uppercase;
+}
+
+.sibling-nav {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  font-size: 0.75em;
+  opacity: 0.75;
+}
+
+.sibling-nav button {
+  padding: 0 5px;
+  font-size: 1em;
+  line-height: 1.4;
+  background: transparent;
+}
+
+.sibling-nav button:hover:not(:disabled) {
+  background: var(--vscode-button-secondaryBackground, rgba(128, 128, 128, 0.2));
+}
+
+.sibling-pos {
+  font-variant-numeric: tabular-nums;
+}
+
+.message-footer {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 6px;
+}
+
+.message-edit-btn {
+  padding: 3px 10px;
+  font-size: 0.95em;
+  background: transparent;
+  border: 1px solid transparent;
+  opacity: 0.35;
+  transition: opacity 0.1s;
+}
+
+.message:hover .message-edit-btn {
+  opacity: 0.8;
+}
+
+.message-edit-btn:hover {
+  opacity: 1 !important;
+  background: var(--vscode-button-secondaryBackground, rgba(128, 128, 128, 0.2));
+  border-color: var(--vscode-panel-border, rgba(128, 128, 128, 0.3));
+}
+
+.message-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.message-editor textarea {
+  width: 100%;
+  resize: vertical;
+  background: var(--vscode-input-background);
+  color: var(--vscode-input-foreground);
+  border: 1px solid var(--vscode-focusBorder, transparent);
+  border-radius: 4px;
+  padding: 6px;
+  font-family: inherit;
+  font-size: inherit;
+  box-sizing: border-box;
+}
+
+.message-editor-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.message-editor-actions button:first-child {
+  background: var(--vscode-button-background);
+  color: var(--vscode-button-foreground);
 }
 
 .markdown-body {

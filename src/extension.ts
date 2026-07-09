@@ -94,23 +94,29 @@ export function activate(context: vscode.ExtensionContext): void {
   const store = new ConversationStore(storageDir);
   const summarizer = new Summarizer(registry, settings, store, log);
   const controller = new ChatController(engine, store, registry, settings, summarizer, log);
-  const viewProvider = new ChatViewProvider(
-    context.extensionUri,
-    controller,
-    store,
-    registry,
-    log
-  );
-  const decorations = new ContextDecorationProvider(folder.uri);
-  controller.onContextBuilt = (ctx) => decorations.update(ctx);
 
   const ready = store.init().then(
     () => log(`Conversation store ready at ${storageDir}`),
     (e) => log(`Conversation store failed to initialize: ${e}`)
   );
 
+  const viewProvider = new ChatViewProvider(
+    context.extensionUri,
+    controller,
+    store,
+    registry,
+    ready,
+    log
+  );
+  const decorations = new ContextDecorationProvider(folder.uri);
+  controller.onContextBuilt = (ctx) => decorations.update(ctx);
+
   context.subscriptions.push(
-    vscode.window.registerWebviewViewProvider(ChatViewProvider.viewType, viewProvider),
+    // Keep the webview alive when the sidebar tab is hidden — switching back is
+    // instant instead of a full HTML reload + init round-trip.
+    vscode.window.registerWebviewViewProvider(ChatViewProvider.viewType, viewProvider, {
+      webviewOptions: { retainContextWhenHidden: true },
+    }),
     vscode.window.registerFileDecorationProvider(decorations),
 
     vscode.commands.registerCommand("insightcoder.openChat", () =>
@@ -123,8 +129,8 @@ export function activate(context: vscode.ExtensionContext): void {
 
     vscode.commands.registerCommand("insightcoder.newConversation", async () => {
       await ready;
-      const conv = await store.startNew();
-      viewProvider.post({ type: "conversationLoaded", turns: conv.turns, conversationId: conv.id });
+      await store.startNew();
+      viewProvider.postCurrentConversation();
       await viewProvider.sendConversationList();
     }),
 

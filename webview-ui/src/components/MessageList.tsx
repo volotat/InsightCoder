@@ -1,12 +1,15 @@
 import { useEffect, useRef, useState } from "preact/hooks";
+import { post } from "../vscodeApi";
 import {
   streaming,
   streamingText,
   streamingThinking,
   streamingThinkingTokens,
   thinkingActive,
+  turnState,
   turns,
 } from "../state";
+import type { TurnDTO } from "../../../src/panel/protocol";
 import { Markdown, renderMarkdown } from "./Markdown";
 import { ThinkingBlock } from "./ThinkingBlock";
 
@@ -39,7 +42,9 @@ function StreamingMessage() {
   }
   return (
     <div class="message assistant">
-      <div class="message-role">Model</div>
+      <div class="message-header">
+        <span class="message-role">Model</span>
+      </div>
       {(streamingThinking.value || thinkingActive.value) && (
         <ThinkingBlock
           thinking={streamingThinking.value}
@@ -67,10 +72,80 @@ function WelcomeMessage() {
   );
 }
 
+/** ChatGPT-style ‹ 2/3 › switcher, shown where a message has sibling branches. */
+function SiblingNav({ turn }: { turn: TurnDTO }) {
+  if (!turn.id || turn.siblingCount === undefined || turn.siblingCount <= 1) {
+    return null;
+  }
+  const index = turn.siblingIndex ?? 0;
+  const busy = turnState.value !== "idle";
+  const go = (i: number) => post({ type: "selectSibling", id: turn.id!, index: i });
+  return (
+    <span class="sibling-nav">
+      <button disabled={busy || index === 0} title="Previous version" onClick={() => go(index - 1)}>
+        ‹
+      </button>
+      <span class="sibling-pos">
+        {index + 1}/{turn.siblingCount}
+      </span>
+      <button
+        disabled={busy || index === turn.siblingCount - 1}
+        title="Next version"
+        onClick={() => go(index + 1)}
+      >
+        ›
+      </button>
+    </span>
+  );
+}
+
+function MessageEditor({ turn, onDone }: { turn: TurnDTO; onDone: () => void }) {
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => {
+    const el = textareaRef.current;
+    if (el) {
+      el.focus();
+      el.setSelectionRange(el.value.length, el.value.length);
+    }
+  }, []);
+
+  const save = () => {
+    const content = textareaRef.current?.value.trim();
+    if (content && content !== turn.content && turn.id) {
+      post({ type: "editMessage", id: turn.id, content });
+    }
+    onDone();
+  };
+
+  return (
+    <div class="message-editor">
+      <textarea
+        ref={textareaRef}
+        rows={Math.min(12, Math.max(3, turn.content.split("\n").length + 1))}
+        defaultValue={turn.content}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
+            e.preventDefault();
+            save();
+          } else if (e.key === "Escape") {
+            onDone();
+          }
+        }}
+      />
+      <div class="message-editor-actions">
+        <button onClick={save}>{turn.role === "user" ? "Save & resend" : "Save"}</button>
+        <button onClick={onDone}>Cancel</button>
+      </div>
+    </div>
+  );
+}
+
 export function MessageList() {
   const bottomRef = useRef<HTMLDivElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
   const pinnedToBottom = useRef(true);
+  const [editingId, setEditingId] = useState<string | null>(null);
 
   useEffect(() => {
     const el = listRef.current;
@@ -90,16 +165,38 @@ export function MessageList() {
     }
   });
 
+  const busy = turnState.value !== "idle";
+
   return (
     <div class="message-list" ref={listRef}>
       {turns.value.length === 0 && !streaming.value && <WelcomeMessage />}
-      {turns.value.map((t, i) => (
-        <div class={`message ${t.role}`} key={i}>
-          <div class="message-role">{t.role === "user" ? "User" : "Model"}</div>
-          {t.role === "assistant" && t.thinking && (
-            <ThinkingBlock thinking={t.thinking} tokens={t.thinkingTokens} />
+      {turns.value.map((t) => (
+        <div class={`message ${t.role}`} key={t.id ?? t.timestamp}>
+          <div class="message-header">
+            <span class="message-role">{t.role === "user" ? "User" : "Model"}</span>
+            <SiblingNav turn={t} />
+          </div>
+          {editingId === t.id ? (
+            <MessageEditor turn={t} onDone={() => setEditingId(null)} />
+          ) : (
+            <>
+              {t.role === "assistant" && t.thinking && (
+                <ThinkingBlock thinking={t.thinking} tokens={t.thinkingTokens} />
+              )}
+              <Markdown source={t.content} />
+              {t.id && !busy && (
+                <div class="message-footer">
+                  <button
+                    class="message-edit-btn"
+                    title={t.role === "user" ? "Edit and resend (creates a new branch)" : "Edit this response (creates a new branch)"}
+                    onClick={() => setEditingId(t.id!)}
+                  >
+                    ✎ Edit
+                  </button>
+                </div>
+              )}
+            </>
           )}
-          <Markdown source={t.content} />
         </div>
       ))}
       <StreamingMessage />
